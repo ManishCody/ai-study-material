@@ -35,10 +35,9 @@ async function sendRequestWithRetry(prompt) {
     try {
       const aiResp = await chatSession.sendMessage(prompt);
       const rawResponse = await aiResp.response.text();
-      console.log(rawResponse);
-      
       const parsedResponse = JSON.parse(rawResponse);
-
+      console.log(parsedResponse);
+      
       if (!parsedResponse) {
         throw new Error("AI response is empty or invalid.");
       }
@@ -55,11 +54,9 @@ async function sendRequestWithRetry(prompt) {
         );
       } else {
         console.error("Error during AI request:", error);
-        throw new Error("AI request failed: " + error.message);
       }
     }
   }
-  throw new Error("Max retries reached for AI request.");
 }
 
 // Generate chapter notes for study material
@@ -71,13 +68,22 @@ async function generateChapterNotes(material) {
       const updatedTopics = [];
 
       for (const topic of chapter.topics) {
-        const chapterPrompt = `Generate detailed HTML content for the topic "${topic.title}" in the context of the chapter titled "${chapter.chapterTitle}" in the course titled "${material.topic}". The content should include:
-        - "courseTitle": course title,
-        - "chapterTitle": 'Chapter title',
-        - "topicTitle": The title of the topic,
-        - "summary": A detailed HTML summary of the topic,
-        - "keyPoints": Key points as an array of strings in HTML format.
-        Maintain the exact structure of the JSON object with the key names as "htmlContent", "topicTitle", "summary", and "keyPoints". Return only the JSON object.`;
+        const chapterPrompt = `Generate detailed HTML content for the topic "${topic.title}" in the context of the chapter titled "${chapter.chapterTitle}" in the course titled "${material.topic}". The content must adhere to the following structure and constraints:
+
+- The output must be a **single valid JSON object** with the following fields:
+  - 'htmlContent': An object containing:
+    - 'courseTitle': A string with the course title.
+    - 'chapterTitle': A string with the chapter title.
+    - 'topicTitle': A string with the topic title.
+    - 'summary': A detailed HTML summary of the topic enclosed within '<div>' or other appropriate HTML tags.
+    - 'keyPoints': An array of strings, where each string is a key point enclosed in appropriate HTML tags (e.g., '<li>' for list items).
+
+- Ensure all fields are properly formatted as valid JSON keys.
+- Do not include any additional text, explanations, or non-JSON content.
+- All content should be properly escaped and formatted for valid HTML.
+
+
+`;
 
         try {
           const chapterContent = await sendRequestWithRetry(chapterPrompt);
@@ -131,11 +137,19 @@ export async function POST(req) {
       );
     }
 
-    const prompt = `Generate study material for ${topic} for an ${courseType}. The difficulty level should be ${difficultyLevel}. The study material should include:
-    - A course summary,
-    - A list of chapters, each with a chapter summary and topics,
-    - Suggest one image URL representing the topic '${topic}',
-    Output in JSON format.`;
+    const prompt = `Generate study material for the topic "${topic}" for an ${courseType}. The difficulty level should be ${difficultyLevel}. The study material must adhere to the following structure and constraints:
+
+- The output must be a **single valid JSON object**. Do not include any additional text, explanations, or formatting outside the JSON structure.
+- The JSON object should have the following fields:
+  - course_summary: A string containing a detailed summary of the entire course.
+  - image_url: A string containing a single URL that represents the topic '${topic}'.
+  - chapters: An array, where each element is an object with:
+    - title: A string representing the chapter's title.
+    - topics: An array of strings, where each string is the name of a topic within the chapter.
+
+The JSON output must follow this exact structure and format. No extraneous characters or non-JSON output should be included.
+
+`;
 
     const aiResult = await sendRequestWithRetry(prompt);
 
