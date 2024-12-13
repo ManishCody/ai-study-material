@@ -13,7 +13,7 @@ function parseAIResponse(responseText) {
   try {
     return JSON.parse(responseText);
   } catch (error) {
-    console.error("Failed to parse AI response:", error, "Response text:", responseText);
+    console.error("Failed to parse AI response:", error);
     return null;
   }
 }
@@ -25,7 +25,8 @@ const RETRY_DELAY_MS = 2000;
 async function sendRequestWithRetry(prompt) {
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const aiResp = await chatSession.sendMessage(prompt);
+      const controller = new AbortController();
+      const aiResp = await chatSession.sendMessage(prompt, { signal: controller.signal });
       const rawResponse = await aiResp.response.text();
 
       if (!rawResponse || rawResponse.trim() === "") {
@@ -46,7 +47,7 @@ async function sendRequestWithRetry(prompt) {
       if (shouldRetry && attempt < MAX_RETRIES) {
         const backoffTime = RETRY_DELAY_MS * Math.pow(2, attempt);
         console.warn(`Retry attempt ${attempt}/${MAX_RETRIES}. Backing off for ${backoffTime}ms...`);
-        await new Promise((resolve) => setTimeout(resolve, backoffTime));
+        await new Promise(resolve => setTimeout(resolve, backoffTime));
       } else {
         console.error("Failed to fetch AI response after retries:", error);
         throw error;
@@ -54,6 +55,38 @@ async function sendRequestWithRetry(prompt) {
     }
   }
   throw new Error("Failed after maximum retries.");
+}
+
+// Adding a timeout mechanism to the AI request
+async function sendRequestWithTimeout(prompt, timeout = 5000) {
+  const controller = new AbortController();
+
+  setTimeout(() => {
+    controller.abort();
+  }, timeout);
+
+  try {
+    const aiResp = await chatSession.sendMessage(prompt, { signal: controller.signal });
+    const rawResponse = await aiResp.response.text();
+
+    if (!rawResponse || rawResponse.trim() === "") {
+      throw new Error("AI service returned an empty response.");
+    }
+
+    const parsedResponse = parseAIResponse(rawResponse);
+
+    if (!parsedResponse) {
+      throw new Error("Parsed response is null or invalid.");
+    }
+
+    return parsedResponse;
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error("Request timed out.");
+    } else {
+      throw error;
+    }
+  }
 }
 
 // Transform AI response into the required structure
@@ -65,7 +98,7 @@ function transformAIResponse(aiResult) {
 
   return aiResult.chapters.map((chapter, index) => ({
     chapterTitle: chapter.title || `Chapter ${index + 1}`,
-    topics: chapter.topics.map((topic) => ({
+    topics: chapter.topics.map(topic => ({
       title: topic || "Untitled Topic",
       htmlContent: {
         summary: topic?.summary || "No summary provided.",
@@ -92,7 +125,7 @@ async function generateChapterNotes(material) {
       Maintain the exact structure of the JSON object with the key names "htmlContent", "topicTitle", "summary", and "keyPoints". Return only the JSON object.`;
 
       try {
-        const chapterContent = await sendRequestWithRetry(chapterPrompt);
+        const chapterContent = await sendRequestWithTimeout(chapterPrompt, 10000); // Set a 10-second timeout
 
         if (!chapterContent?.htmlContent) {
           console.warn("Invalid content from AI response.");
