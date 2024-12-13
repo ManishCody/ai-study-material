@@ -29,7 +29,7 @@ async function sendRequestWithRetry(prompt) {
       const aiResp = await chatSession.sendMessage(prompt, { signal: controller.signal });
       const rawResponse = await aiResp.response.text();
 
-      if (!rawResponse || rawResponse.trim() === "") {
+      if (!rawResponse.trim()) {
         throw new Error("AI service returned an empty response.");
       }
 
@@ -69,7 +69,7 @@ async function sendRequestWithTimeout(prompt, timeout = 5000) {
     const aiResp = await chatSession.sendMessage(prompt, { signal: controller.signal });
     const rawResponse = await aiResp.response.text();
 
-    if (!rawResponse || rawResponse.trim() === "") {
+    if (!rawResponse.trim()) {
       throw new Error("AI service returned an empty response.");
     }
 
@@ -197,7 +197,7 @@ export async function POST(req) {
   } catch (error) {
     console.error("API Error:", error);
     return NextResponse.json(
-      { error: error.message || "An unexpected error occurred." },
+      { error: error || "An unexpected error occurred." },
       { status: 500 }
     );
   }
