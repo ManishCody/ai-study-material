@@ -13,10 +13,11 @@ function transformAIResponse(aiResult) {
       console.warn("AI response structure invalid. Falling back to empty chapters.");
       return [];
     }
-
+    console.log(aiResult.chapters);
+    
     return aiResult.chapters.map((chapter, index) => ({
       chapterTitle: chapter?.title || `Chapter ${index + 1}`,
-      topics: chapter?.topics?.map((topic) => ({
+      topics: chapter?.topics?.map((topic) => ({        
         title: topic || "Untitled Topic",
         htmlContent: {
           summary: topic?.summary || "No summary provided.",
@@ -37,7 +38,6 @@ async function sendRequestWithRetry(prompt) {
       const aiResp = await chatSession.sendMessage(prompt);
       const rawResponse = await aiResp.response.text();
       const parsedResponse = JSON.parse(rawResponse);
-      console.log("AI Response:", JSON.stringify(parsedResponse, null, 2));
 
       if (!parsedResponse) {
         throw new Error("AI response is empty or invalid.");
@@ -83,9 +83,9 @@ async function generateChapterNotes(material) {
 - Ensure all fields are properly formatted as valid JSON keys.
 - Do not include any additional text, explanations, or non-JSON content.
 - All content should be properly escaped and formatted for valid HTML.`;
-
+        
         try {
-          const chapterContent = await sendRequestWithRetry(chapterPrompt);
+          const chapterContent = await sendRequestWithRetry(chapterPrompt);          
           updatedTopics.push({
             title: chapterContent?.htmlContent?.topicTitle || topic.title,
             htmlContent: {
@@ -153,9 +153,10 @@ export async function POST(req) {
 The JSON output must follow this exact structure and format. No extraneous characters or non-JSON output should be included.`;
 
     const aiResult = await sendRequestWithRetry(prompt);
-
+    
+    
     const transformedChapters = transformAIResponse(aiResult);
-
+    
     const studyMaterial = new StudyMaterial({
       courseId,
       courseType,
@@ -170,9 +171,7 @@ The JSON output must follow this exact structure and format. No extraneous chara
 
     const savedMaterial = await studyMaterial.save();
 
-    if (savedMaterial.status === "Pending") {
       await generateChapterNotes(savedMaterial);
-    }
 
     return NextResponse.json({ result: savedMaterial });
   } catch (error) {
