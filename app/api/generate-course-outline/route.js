@@ -3,14 +3,15 @@ import StudyMaterial from "@/models/StudyMaterial";
 import { chatSession } from "@/configs/AIModel";
 import { NextResponse } from "next/server";
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 1000;
+const MAX_RETRIES = 5;
+const RETRY_DELAY_MS = 2000;
 
 // Function to transform AI response into the required structure
 function transformAIResponse(aiResult) {
   try {
     if (!aiResult || !aiResult?.chapters) {
-      throw new Error("Invalid AI response structure.");
+      console.warn("AI response structure invalid. Falling back to empty chapters.");
+      return [];
     }
 
     return aiResult.chapters.map((chapter, index) => ({
@@ -25,7 +26,7 @@ function transformAIResponse(aiResult) {
     }));
   } catch (error) {
     console.error("Error transforming AI response:", error);
-    throw new Error("Failed to transform AI response.");
+    return [];
   }
 }
 
@@ -36,8 +37,8 @@ async function sendRequestWithRetry(prompt) {
       const aiResp = await chatSession.sendMessage(prompt);
       const rawResponse = await aiResp.response.text();
       const parsedResponse = JSON.parse(rawResponse);
-      console.log(parsedResponse);
-      
+      console.log("AI Response:", JSON.stringify(parsedResponse, null, 2));
+
       if (!parsedResponse) {
         throw new Error("AI response is empty or invalid.");
       }
@@ -53,10 +54,11 @@ async function sendRequestWithRetry(prompt) {
           setTimeout(resolve, RETRY_DELAY_MS * attempt)
         );
       } else {
-        console.error("Error during AI request:", error);
+        console.error("Error during AI request:", error?.response?.data || error.message);
       }
     }
   }
+  throw new Error("AI service failed after maximum retries.");
 }
 
 // Generate chapter notes for study material
@@ -80,10 +82,7 @@ async function generateChapterNotes(material) {
 
 - Ensure all fields are properly formatted as valid JSON keys.
 - Do not include any additional text, explanations, or non-JSON content.
-- All content should be properly escaped and formatted for valid HTML.
-
-
-`;
+- All content should be properly escaped and formatted for valid HTML.`;
 
         try {
           const chapterContent = await sendRequestWithRetry(chapterPrompt);
@@ -112,10 +111,14 @@ async function generateChapterNotes(material) {
       });
     }
 
-    await StudyMaterial.findByIdAndUpdate(material._id, {
-      courseLayout: { chapters: updatedChapters },
-      notes: true,
-    });
+    await StudyMaterial.findByIdAndUpdate(
+      material._id,
+      {
+        courseLayout: { chapters: updatedChapters },
+        notes: true,
+      },
+      { runValidators: true }
+    );
 
     console.log("Chapter notes updated successfully for StudyMaterial:", material._id);
   } catch (error) {
@@ -147,9 +150,7 @@ export async function POST(req) {
     - title: A string representing the chapter's title.
     - topics: An array of strings, where each string is the name of a topic within the chapter.
 
-The JSON output must follow this exact structure and format. No extraneous characters or non-JSON output should be included.
-
-`;
+The JSON output must follow this exact structure and format. No extraneous characters or non-JSON output should be included.`;
 
     const aiResult = await sendRequestWithRetry(prompt);
 

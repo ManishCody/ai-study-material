@@ -9,37 +9,43 @@ function parseAIResponse(responseText) {
     return JSON.parse(responseText);
   } catch (error) {
     console.error("Failed to parse AI response:", error);
-    return [];
+    return null;
   }
 }
 
-// Retry logic for AI request with exponential backoff
+// Retry logic with exponential backoff
 const MAX_RETRIES = 5;
-const RETRY_DELAY_MS = 2000; // Increase delay between retries
+const RETRY_DELAY_MS = 2000;
 
 async function sendRequestWithRetry(prompt) {
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const aiResp = await chatSession.sendMessage(prompt);
       const rawResponse = await aiResp.response.text();
-      
       return parseAIResponse(rawResponse);
     } catch (error) {
-      if (error?.response?.status === 429 && attempt < MAX_RETRIES) {
-        const backoffTime = RETRY_DELAY_MS * Math.pow(2, attempt); // Exponential backoff
+      const isRateLimited = error?.response?.status === 429;
+      if (isRateLimited && attempt < MAX_RETRIES) {
+        const backoffTime = RETRY_DELAY_MS * Math.pow(2, attempt);
         console.warn(`Rate limited. Retrying in ${backoffTime}ms...`);
         await new Promise((resolve) => setTimeout(resolve, backoffTime));
       } else {
         console.error("AI request failed:", error);
-        throw new Error("Failed to generate questionPaper or notes.");
+        throw new Error("Failed to generate chapter notes.");
       }
     }
   }
+  throw new Error("Failed after maximum retries.");
 }
 
 // Transform AI response into the required structure
 function transformAIResponse(aiResult) {
-  return aiResult?.chapters?.map((chapter, index) => ({
+  if (!aiResult?.chapters) {
+    console.warn("Invalid AI response: Missing 'chapters'");
+    return [];
+  }
+
+  return aiResult.chapters.map((chapter, index) => ({
     chapterTitle: chapter.title || `Chapter ${index + 1}`,
     topics: chapter.topics.map((topic) => ({
       title: topic || "Untitled Topic",
@@ -51,14 +57,14 @@ function transformAIResponse(aiResult) {
   }));
 }
 
-// Generate detailed notes for a study material
+// Generate chapter notes for a study material
 async function generateChapterNotes(material) {
   const updatedChapters = [];
 
-  for (const chapter of material?.courseLayout?.chapters) {
+  for (const chapter of material?.courseLayout?.chapters || []) {
     const updatedTopics = [];
 
-    for (const topic of chapter.topics) {
+    for (const topic of chapter.topics || []) {
       const chapterPrompt = `Generate detailed HTML content for the topic "${topic.title}" in the context of the chapter titled "${chapter.chapterTitle}" in the course titled "${material.topic}". The content should include:
       - "courseTitle": Course title,
       - "chapterTitle": Chapter title,
@@ -69,13 +75,15 @@ async function generateChapterNotes(material) {
 
       try {
         const chapterContent = await sendRequestWithRetry(chapterPrompt);
-        console.log(chapterContent);
-        
+        if (!chapterContent?.htmlContent) {
+          console.warn("Invalid content from AI response.");
+        }
+
         updatedTopics.push({
-          title: chapterContent?.htmlContent?.topicTitle || topic.title,
+          title: chapterContent.htmlContent.topicTitle || topic.title,
           htmlContent: {
-            summary: chapterContent?.htmlContent?.summary || "Summary not available.",
-            keyPoints: chapterContent?.htmlContent?.keyPoints || [],
+            summary: chapterContent.htmlContent.summary || "Summary not available.",
+            keyPoints: chapterContent.htmlContent.keyPoints || [],
           },
         });
       } catch (error) {
@@ -115,8 +123,8 @@ export async function POST(req) {
     }
 
     await dbConnect();
-    console.log(topic, studyMaterialId);
-    
+    console.log("Received parameters:", topic, studyMaterialId);
+
     const studyMaterial = await StudyMaterial.findById(studyMaterialId);
 
     if (!studyMaterial) {
@@ -126,9 +134,10 @@ export async function POST(req) {
       );
     }
 
+    console.log("Generating notes for study material...");
     await generateChapterNotes(studyMaterial);
-    await studyMaterial.save();
 
+    console.log("Notes generated successfully.");
     return NextResponse.json({
       message: "Notes stored successfully.",
       studyMaterial,
