@@ -13,11 +13,10 @@ function transformAIResponse(aiResult) {
       console.warn("AI response structure invalid. Falling back to empty chapters.");
       return [];
     }
-    console.log(aiResult.chapters);
-    
+
     return aiResult.chapters.map((chapter, index) => ({
       chapterTitle: chapter?.title || `Chapter ${index + 1}`,
-      topics: chapter?.topics?.map((topic) => ({        
+      topics: chapter?.topics?.map((topic) => ({
         title: topic || "Untitled Topic",
         htmlContent: {
           summary: topic?.summary || "No summary provided.",
@@ -31,7 +30,7 @@ function transformAIResponse(aiResult) {
   }
 }
 
-// Retry logic
+// Retry logic with exponential backoff
 async function sendRequestWithRetry(prompt) {
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
@@ -47,14 +46,13 @@ async function sendRequestWithRetry(prompt) {
     } catch (error) {
       const isRetryable = error.response?.status === 503;
       if (attempt < MAX_RETRIES && isRetryable) {
+        const delay = RETRY_DELAY_MS * attempt;
         console.warn(
-          `AI service unavailable (attempt ${attempt}/${MAX_RETRIES}). Retrying in ${RETRY_DELAY_MS * attempt}ms...`
+          `Retry attempt ${attempt}/${MAX_RETRIES}: Retrying in ${delay}ms...`
         );
-        await new Promise((resolve) =>
-          setTimeout(resolve, RETRY_DELAY_MS * attempt)
-        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
       } else {
-        console.error("Error during AI request:", error?.response?.data || error.message);
+        console.error("Failed to process AI request:", error?.message || error);
       }
     }
   }
@@ -64,13 +62,11 @@ async function sendRequestWithRetry(prompt) {
 // Generate chapter notes for study material
 async function generateChapterNotes(material) {
   try {
-    const updatedChapters = [];
-
-    for (const chapter of material.courseLayout.chapters) {
-      const updatedTopics = [];
-
-      for (const topic of chapter.topics) {
-        const chapterPrompt = `Generate detailed HTML content for the topic "${topic.title}" in the context of the chapter titled "${chapter.chapterTitle}" in the course titled "${material.topic}". The content must adhere to the following structure and constraints:
+    const updatedChapters = await Promise.all(
+      material.courseLayout.chapters.map(async (chapter) => {
+        const updatedTopics = await Promise.all(
+          chapter.topics.map(async (topic) => {
+            const chapterPrompt = `Generate detailed HTML content for the topic "${topic.title}" in the context of the chapter titled "${chapter.chapterTitle}" in the course titled "${material.topic}". The content must adhere to the following structure and constraints:
 
 - The output must be a **single valid JSON object** with the following fields:
   - 'htmlContent': An object containing:
@@ -83,33 +79,35 @@ async function generateChapterNotes(material) {
 - Ensure all fields are properly formatted as valid JSON keys.
 - Do not include any additional text, explanations, or non-JSON content.
 - All content should be properly escaped and formatted for valid HTML.`;
-        
-        try {
-          const chapterContent = await sendRequestWithRetry(chapterPrompt);          
-          updatedTopics.push({
-            title: chapterContent?.htmlContent?.topicTitle || topic.title,
-            htmlContent: {
-              summary: chapterContent?.htmlContent?.summary || "Summary not available.",
-              keyPoints: chapterContent?.htmlContent?.keyPoints || [],
-            },
-          });
-        } catch (error) {
-          console.error(`Failed to generate content for topic "${topic.title}":`, error);
-          updatedTopics.push({
-            title: topic.title,
-            htmlContent: {
-              summary: "Summary not available due to an error.",
-              keyPoints: [],
-            },
-          });
-        }
-      }
 
-      updatedChapters.push({
-        chapterTitle: chapter.chapterTitle,
-        topics: updatedTopics,
-      });
-    }
+            try {
+              const chapterContent = await sendRequestWithRetry(chapterPrompt);
+              return {
+                title: chapterContent?.htmlContent?.topicTitle || topic.title,
+                htmlContent: {
+                  summary: chapterContent?.htmlContent?.summary || "Summary not available.",
+                  keyPoints: chapterContent?.htmlContent?.keyPoints || [],
+                },
+              };
+            } catch (error) {
+              console.error(`Failed to generate content for topic "${topic.title}":`, error);
+              return {
+                title: topic.title,
+                htmlContent: {
+                  summary: "Summary not available due to an error.",
+                  keyPoints: [],
+                },
+              };
+            }
+          })
+        );
+
+        return {
+          chapterTitle: chapter.chapterTitle,
+          topics: updatedTopics,
+        };
+      })
+    );
 
     await StudyMaterial.findByIdAndUpdate(
       material._id,
@@ -153,10 +151,9 @@ export async function POST(req) {
 The JSON output must follow this exact structure and format. No extraneous characters or non-JSON output should be included.`;
 
     const aiResult = await sendRequestWithRetry(prompt);
-    
-    
+
     const transformedChapters = transformAIResponse(aiResult);
-    
+
     const studyMaterial = new StudyMaterial({
       courseId,
       courseType,
@@ -171,7 +168,9 @@ The JSON output must follow this exact structure and format. No extraneous chara
 
     const savedMaterial = await studyMaterial.save();
 
+    if (savedMaterial.status === "Pending") {
       await generateChapterNotes(savedMaterial);
+    }
 
     return NextResponse.json({ result: savedMaterial });
   } catch (error) {
