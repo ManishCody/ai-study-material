@@ -5,10 +5,15 @@ import StudyMaterial from "@/models/StudyMaterial";
 
 // Utility to parse AI response
 function parseAIResponse(responseText) {
+  if (!responseText) {
+    console.error("Empty or undefined response from AI service.");
+    return null;
+  }
+
   try {
     return JSON.parse(responseText);
   } catch (error) {
-    console.error("Failed to parse AI response:", error);
+    console.error("Failed to parse AI response:", error, "Response text:", responseText);
     return null;
   }
 }
@@ -22,16 +27,29 @@ async function sendRequestWithRetry(prompt) {
     try {
       const aiResp = await chatSession.sendMessage(prompt);
       const rawResponse = await aiResp.response.text();
-      return parseAIResponse(rawResponse);
+
+      if (!rawResponse || rawResponse.trim() === "") {
+        throw new Error("AI service returned an empty response.");
+      }
+
+      const parsedResponse = parseAIResponse(rawResponse);
+
+      if (!parsedResponse) {
+        throw new Error("Parsed response is null or invalid.");
+      }
+
+      return parsedResponse;
     } catch (error) {
       const isRateLimited = error?.response?.status === 429;
-      if (isRateLimited && attempt < MAX_RETRIES) {
+      const shouldRetry = isRateLimited || error.message.includes("empty response");
+
+      if (shouldRetry && attempt < MAX_RETRIES) {
         const backoffTime = RETRY_DELAY_MS * Math.pow(2, attempt);
-        console.warn(`Rate limited. Retrying in ${backoffTime}ms...`);
+        console.warn(`Retry attempt ${attempt}/${MAX_RETRIES}. Backing off for ${backoffTime}ms...`);
         await new Promise((resolve) => setTimeout(resolve, backoffTime));
       } else {
-        console.error("AI request failed:", error);
-        throw new Error("Failed to generate chapter notes.");
+        console.error("Failed to fetch AI response after retries:", error);
+        throw error;
       }
     }
   }
@@ -75,6 +93,7 @@ async function generateChapterNotes(material) {
 
       try {
         const chapterContent = await sendRequestWithRetry(chapterPrompt);
+
         if (!chapterContent?.htmlContent) {
           console.warn("Invalid content from AI response.");
         }
