@@ -60,70 +60,7 @@ async function sendRequestWithRetry(prompt) {
 }
 
 // Generate chapter notes for study material
-async function generateChapterNotes(material) {
-  try {
-    const updatedChapters = await Promise.all(
-      material.courseLayout.chapters.map(async (chapter) => {
-        const updatedTopics = await Promise.all(
-          chapter.topics.map(async (topic) => {
-            const chapterPrompt = `Generate detailed HTML content for the topic "${topic.title}" in the context of the chapter titled "${chapter.chapterTitle}" in the course titled "${material.topic}". The content must adhere to the following structure and constraints:
 
-- The output must be a **single valid JSON object** with the following fields:
-  - 'htmlContent': An object containing:
-    - 'courseTitle': A string with the course title.
-    - 'chapterTitle': A string with the chapter title.
-    - 'topicTitle': A string with the topic title.
-    - 'summary': A detailed HTML summary of the topic enclosed within '<div>' or other appropriate HTML tags.
-    - 'keyPoints': An array of strings, where each string is a key point enclosed in appropriate HTML tags (e.g., '<li>' for list items).
-
-- Ensure all fields are properly formatted as valid JSON keys.
-- Do not include any additional text, explanations, or non-JSON content.
-- All content should be properly escaped and formatted for valid HTML.`;
-
-            try {
-              const chapterContent = await sendRequestWithRetry(chapterPrompt);
-              return {
-                title: chapterContent?.htmlContent?.topicTitle || topic.title,
-                htmlContent: {
-                  summary: chapterContent?.htmlContent?.summary || "Summary not available.",
-                  keyPoints: chapterContent?.htmlContent?.keyPoints || [],
-                },
-              };
-            } catch (error) {
-              console.error(`Failed to generate content for topic "${topic.title}":`, error);
-              return {
-                title: topic.title,
-                htmlContent: {
-                  summary: "Summary not available due to an error.",
-                  keyPoints: [],
-                },
-              };
-            }
-          })
-        );
-
-        return {
-          chapterTitle: chapter.chapterTitle,
-          topics: updatedTopics,
-        };
-      })
-    );
-
-    await StudyMaterial.findByIdAndUpdate(
-      material._id,
-      {
-        courseLayout: { chapters: updatedChapters },
-        notes: true,
-      },
-      { runValidators: true }
-    );
-
-    console.log("Chapter notes updated successfully for StudyMaterial:", material._id);
-  } catch (error) {
-    console.error("Error updating chapter notes:", error);
-    throw new Error("Failed to generate chapter notes.");
-  }
-}
 
 // POST handler
 export async function POST(req) {
@@ -167,10 +104,6 @@ The JSON output must follow this exact structure and format. No extraneous chara
     });
 
     const savedMaterial = await studyMaterial.save();
-
-    if (savedMaterial.status === "Pending") {
-      await generateChapterNotes(savedMaterial);
-    }
 
     return NextResponse.json({ result: savedMaterial });
   } catch (error) {
