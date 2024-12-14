@@ -111,8 +111,7 @@ function transformAIResponse(aiResult) {
 // Generate chapter notes for a study material
 async function generateChapterNotes(material) {
   const updatedChapters = [];
-  console.log("hi -> ", material?.courseLayout?.chapters[0].topics);
-
+  
   for (const chapter of material?.courseLayout?.chapters || []) {
     const updatedTopics = [];
 
@@ -129,20 +128,18 @@ async function generateChapterNotes(material) {
         const chapterContent = await chatSession.sendMessage(chapterPrompt);
         const rawResponse = await chapterContent.response.text();
 
-        // Validate and clean the response before parsing
+        // Clean and parse the AI response
         const cleanedResponse = rawResponse.replace(/[^\n\t\r\x20-\x7E]+/g, ""); // Remove control characters
+        const parsedResponse = parseAIResponse(cleanedResponse);
 
-        // Parse the cleaned response
-        const parsedResponse = JSON.parse(cleanedResponse);
-
-        console.log(parsedResponse.htmlContent);
-
+        // Use transformAIResponse to ensure consistent structure
+        const transformedContent = transformAIResponse(parsedResponse);
 
         updatedTopics.push({
-          title: parsedResponse?.htmlContent?.topicTitle || topic.title,
+          title: transformedContent[0]?.topics[0]?.title || topic.title,
           htmlContent: {
-            summary: parsedResponse?.htmlContent?.summary || "Summary not available.",
-            keyPoints: parsedResponse?.htmlContent?.keyPoints || [],
+            summary: transformedContent[0]?.topics[0]?.htmlContent?.summary || "Summary not available.",
+            keyPoints: transformedContent[0]?.topics[0]?.htmlContent?.keyPoints || [],
           },
         });
       } catch (error) {
@@ -162,7 +159,8 @@ async function generateChapterNotes(material) {
       topics: updatedTopics,
     });
   }
-  console.log(updatedChapters[0].topics[0].htmlContent);
+
+  console.log("Transformed Chapters:", updatedChapters);
 
   await StudyMaterial.findByIdAndUpdate(
     material._id,
@@ -175,6 +173,7 @@ async function generateChapterNotes(material) {
     { new: true }
   );
 }
+
 
 // POST handler
 export async function POST(req) {
