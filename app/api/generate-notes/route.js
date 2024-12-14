@@ -58,120 +58,109 @@ async function sendRequestWithRetry(prompt) {
 }
 
 // Adding a timeout mechanism to the AI request
-async function sendRequestWithTimeout(prompt, timeout = 5000) {
-  const controller = new AbortController();
-
-  setTimeout(() => {
-    controller.abort();
-  }, timeout);
-
-  try {
-    const aiResp = await chatSession.sendMessage(prompt, { signal: controller.signal });
-    const rawResponse = await aiResp.response.text();
-
-    if (!rawResponse.trim()) {
-      throw new Error("AI service returned an empty response.");
-    }
-
-    const parsedResponse = parseAIResponse(rawResponse);
-
-    if (!parsedResponse) {
-      throw new Error("Parsed response is null or invalid.");
-    }
-
-    return parsedResponse;
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      throw new Error("Request timed out.");
-    } else {
-      throw error;
-    }
-  }
-}
-
-// Transform AI response into the required structure
-function transformAIResponse(aiResult) {
-  if (!aiResult?.chapters) {
-    console.warn("Invalid AI response: Missing 'chapters'");
-    return [];
-  }
-
-  return aiResult.chapters.map((chapter, index) => ({
-    chapterTitle: chapter.title || `Chapter ${index + 1}`,
-    topics: chapter.topics.map(topic => ({
-      title: topic || "Untitled Topic",
-      htmlContent: {
-        summary: topic?.summary || "No summary provided.",
-        keyPoints: topic?.key_points || ["No key points available."],
-      },
-    })),
-  }));
-}
-
-// Generate chapter notes for a study material
-async function generateChapterNotes(material) {
-  const updatedChapters = [];
-  
-  for (const chapter of material?.courseLayout?.chapters || []) {
-    const updatedTopics = [];
-
-    for (const topic of chapter.topics || []) {
-      const chapterPrompt = `Generate detailed HTML content for the topic "${topic.title}" in the context of the chapter titled "${chapter.chapterTitle}" in the course titled "${material.topic}". The content should include:
-      - "courseTitle": Course title,
-      - "chapterTitle": Chapter title,
-      - "topicTitle": The title of the topic.
-      - "summary": A detailed HTML summary of the topic.
-      - "keyPoints": Key points as an array of strings in HTML format.
-      Maintain the exact structure of the JSON object with the key names "htmlContent", "topicTitle", "summary", and "keyPoints". Return only the JSON object.`;
-
-      try {
-        const chapterContent = await chatSession.sendMessage(chapterPrompt);
-        const rawResponse = await chapterContent.response.text();
-
-        // Clean and parse the AI response
-        const cleanedResponse = rawResponse.replace(/[^\n\t\r\x20-\x7E]+/g, ""); // Remove control characters
-        const parsedResponse = parseAIResponse(cleanedResponse);
-
-        // Use transformAIResponse to ensure consistent structure
-        const transformedContent = transformAIResponse(parsedResponse);
-
-        updatedTopics.push({
-          title: transformedContent[0]?.topics[0]?.title || topic.title,
-          htmlContent: {
-            summary: transformedContent[0]?.topics[0]?.htmlContent?.summary || "Summary not available.",
-            keyPoints: transformedContent[0]?.topics[0]?.htmlContent?.keyPoints || [],
+async function generateChapterNotes({ topics, chatSession }) {
+  const updatedTopics = [];
+  const fallbackResponse = {
+    chapters: [
+      {
+        title: "Untitled Chapter",
+        topics: [
+          {
+            title: "Untitled Topic",
+            htmlContent: {
+              summary: "No summary available.",
+              keyPoints: [],
+            },
           },
-        });
-      } catch (error) {
-        console.error(`Failed to generate content for topic "${topic.title}":`, error);
-        updatedTopics.push({
+        ],
+      },
+    ],
+  };
+
+  const parseAIResponse = (response) => {
+    try {
+      return JSON.parse(response);
+    } catch (error) {
+      console.error("Error parsing AI response:", response, error);
+      return null;
+    }
+  };
+
+  const transformAIResponse = (parsedResponse) => {
+    try {
+      return parsedResponse.chapters.map((chapter) => ({
+        title: chapter.title,
+        topics: chapter.topics.map((topic) => ({
           title: topic.title,
           htmlContent: {
-            summary: "Summary not available due to an error.",
-            keyPoints: [],
+            summary: topic.summary,
+            keyPoints: topic.keyPoints || [],
           },
-        });
-      }
+        })),
+      }));
+    } catch (error) {
+      console.error("Error transforming AI response:", parsedResponse, error);
+      return fallbackResponse.chapters;
     }
+  };
 
-    updatedChapters.push({
-      chapterTitle: chapter.chapterTitle,
-      topics: updatedTopics,
-    });
+  for (const topic of topics) {
+    const message = {
+      content: JSON.stringify({
+        chapters: [
+          {
+            topics: [{ title: topic.title, summary: topic.summary }],
+          },
+        ],
+      }),
+    };
+
+    try {
+      const chapterContent = await chatSession.sendMessage(message);
+
+      // Extract raw response
+      const rawResponse = await chapterContent.response.text();
+      console.log("Raw AI Response:", rawResponse);
+
+      // Clean the response
+      const cleanedResponse = rawResponse.replace(/[^\n\t\r\x20-\x7E]+/g, "");
+
+      // Parse and validate the response
+      let parsedResponse = parseAIResponse(cleanedResponse);
+      if (!parsedResponse) {
+        console.error("Invalid AI response. Using fallback content.");
+        parsedResponse = fallbackResponse;
+      }
+
+      // Transform the response
+      const transformedContent = transformAIResponse(parsedResponse);
+
+      updatedTopics.push({
+        title: transformedContent[0]?.topics[0]?.title || topic.title,
+        htmlContent: {
+          summary:
+            transformedContent[0]?.topics[0]?.htmlContent?.summary ||
+            "Summary not available.",
+          keyPoints:
+            transformedContent[0]?.topics[0]?.htmlContent?.keyPoints || [],
+        },
+      });
+    } catch (error) {
+      console.error(
+        `Error generating notes for topic "${topic.title}":`,
+        error
+      );
+      updatedTopics.push({
+        title: topic.title,
+        htmlContent: {
+          summary: "An error occurred while generating the summary.",
+          keyPoints: [],
+        },
+      });
+    }
   }
 
-  console.log("Transformed Chapters:", updatedChapters);
-
-  await StudyMaterial.findByIdAndUpdate(
-    material._id,
-    {
-      $set: {
-        "courseLayout.chapters": updatedChapters,
-        notes: true,
-      },
-    },
-    { new: true }
-  );
+  return updatedTopics;
 }
 
 
