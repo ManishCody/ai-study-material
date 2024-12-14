@@ -111,6 +111,7 @@ function transformAIResponse(aiResult) {
 // Generate chapter notes for a study material
 async function generateChapterNotes(material) {
   const updatedChapters = [];
+  console.log("hi -> ", material?.courseLayout?.chapters[0].topics);
 
   for (const chapter of material?.courseLayout?.chapters || []) {
     const updatedTopics = [];
@@ -125,17 +126,23 @@ async function generateChapterNotes(material) {
       Maintain the exact structure of the JSON object with the key names "htmlContent", "topicTitle", "summary", and "keyPoints". Return only the JSON object.`;
 
       try {
-        const chapterContent = await sendRequestWithTimeout(chapterPrompt, 10000); // Set a 10-second timeout
+        const chapterContent = await chatSession.sendMessage(chapterPrompt);
+        const rawResponse = await chapterContent.response.text();
 
-        if (!chapterContent?.htmlContent) {
-          console.warn("Invalid content from AI response.");
-        }
+        // Validate and clean the response before parsing
+        const cleanedResponse = rawResponse.replace(/[^\n\t\r\x20-\x7E]+/g, ""); // Remove control characters
+
+        // Parse the cleaned response
+        const parsedResponse = JSON.parse(cleanedResponse);
+
+        console.log(parsedResponse.htmlContent);
+
 
         updatedTopics.push({
-          title: chapterContent.htmlContent.topicTitle || topic.title,
+          title: parsedResponse?.htmlContent?.topicTitle || topic.title,
           htmlContent: {
-            summary: chapterContent.htmlContent.summary || "Summary not available.",
-            keyPoints: chapterContent.htmlContent.keyPoints || [],
+            summary: parsedResponse?.htmlContent?.summary || "Summary not available.",
+            keyPoints: parsedResponse?.htmlContent?.keyPoints || [],
           },
         });
       } catch (error) {
@@ -155,11 +162,18 @@ async function generateChapterNotes(material) {
       topics: updatedTopics,
     });
   }
+  console.log(updatedChapters[0].topics[0].htmlContent);
 
-  await StudyMaterial.findByIdAndUpdate(material._id, {
-    courseLayout: { chapters: updatedChapters },
-    notes: true,
-  });
+  await StudyMaterial.findByIdAndUpdate(
+    material._id,
+    {
+      $set: {
+        "courseLayout.chapters": updatedChapters,
+        notes: true,
+      },
+    },
+    { new: true }
+  );
 }
 
 // POST handler
