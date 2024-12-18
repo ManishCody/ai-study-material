@@ -5,11 +5,6 @@ import StudyMaterial from "@/models/StudyMaterial";
 
 // Utility to parse AI response
 function parseAIResponse(responseText) {
-  if (!responseText) {
-    console.error("Empty or undefined response from AI service.");
-    return null;
-  }
-
   try {
     return JSON.parse(responseText);
   } catch (error) {
@@ -18,128 +13,56 @@ function parseAIResponse(responseText) {
   }
 }
 
-// Retry logic with exponential backoff
-const MAX_RETRIES = 5;
-const RETRY_DELAY_MS = 2000;
+// Add delay between API calls to prevent hitting rate limits
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
-async function sendRequestWithRetry(prompt) {
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+// Generate content for a single topic with retry logic
+async function generateTopicContent(chapterPrompt, retries = 3, delayMs = 1000) {
+  for (let i = 0; i < retries; i++) {
     try {
-      const controller = new AbortController();
-      const aiResp = await chatSession.sendMessage(prompt, { signal: controller.signal });
+      const aiResp = await chatSession.sendMessage(chapterPrompt);
       const rawResponse = await aiResp.response.text();
-
-      if (!rawResponse.trim()) {
-        throw new Error("AI service returned an empty response.");
-      }
-
+      console.log("AI Response:", rawResponse);
       const parsedResponse = parseAIResponse(rawResponse);
 
-      if (!parsedResponse) {
-        throw new Error("Parsed response is null or invalid.");
-      }
-
-      return parsedResponse;
+      if (parsedResponse) return parsedResponse;
+      throw new Error("Empty or invalid AI response.");
     } catch (error) {
-      const isRateLimited = error?.response?.status === 429;
-      const shouldRetry = isRateLimited || error.message.includes("empty response");
-
-      if (shouldRetry && attempt < MAX_RETRIES) {
-        const backoffTime = RETRY_DELAY_MS * Math.pow(2, attempt);
-        console.warn(`Retry attempt ${attempt}/${MAX_RETRIES}. Backing off for ${backoffTime}ms...`);
-        await new Promise(resolve => setTimeout(resolve, backoffTime));
-      } else {
-        console.error("Failed to fetch AI response after retries:", error);
-        throw error;
-      }
+      console.error(`Error during AI request (attempt ${i + 1}):`, error);
+      if (i < retries - 1) await delay(delayMs * (i + 1)); // Exponential backoff
     }
   }
-  throw new Error("Failed after maximum retries.");
-}
-
-// Adding a timeout mechanism to the AI request
-async function sendRequestWithTimeout(prompt, timeout = 5000) {
-  const controller = new AbortController();
-
-  setTimeout(() => {
-    controller.abort();
-  }, timeout);
-
-  try {
-    const aiResp = await chatSession.sendMessage(prompt, { signal: controller.signal });
-    const rawResponse = await aiResp.response.text();
-
-    if (!rawResponse.trim()) {
-      throw new Error("AI service returned an empty response.");
-    }
-
-    const parsedResponse = parseAIResponse(rawResponse);
-
-    if (!parsedResponse) {
-      throw new Error("Parsed response is null or invalid.");
-    }
-
-    return parsedResponse;
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      throw new Error("Request timed out.");
-    } else {
-      throw error;
-    }
-  }
-}
-
-// Transform AI response into the required structure
-function transformAIResponse(aiResult) {
-  if (!aiResult?.chapters) {
-    console.warn("Invalid AI response: Missing 'chapters'");
-    return [];
-  }
-
-  return aiResult.chapters.map((chapter, index) => ({
-    chapterTitle: chapter.title || `Chapter ${index + 1}`,
-    topics: chapter.topics.map(topic => ({
-      title: topic || "Untitled Topic",
-      htmlContent: {
-        summary: topic?.summary || "No summary provided.",
-        keyPoints: topic?.key_points || ["No key points available."],
-      },
-    })),
-  }));
+  throw new Error("Failed to generate content after multiple attempts.");
 }
 
 // Generate chapter notes for a study material
 async function generateChapterNotes(material) {
   const updatedChapters = [];
-  
+
   for (const chapter of material?.courseLayout?.chapters || []) {
     const updatedTopics = [];
 
     for (const topic of chapter.topics || []) {
-      const chapterPrompt = `Generate detailed HTML content for the topic "${topic.title}" in the context of the chapter titled "${chapter.chapterTitle}" in the course titled "${material.topic}". The content should include:
-      - "courseTitle": Course title,
-      - "chapterTitle": Chapter title,
-      - "topicTitle": The title of the topic.
-      - "summary": A detailed HTML summary of the topic.
-      - "keyPoints": Key points as an array of strings in HTML format.
-      Maintain the exact structure of the JSON object with the key names "htmlContent", "topicTitle", "summary", and "keyPoints". Return only the JSON object.`;
+      const chapterPrompt = `
+        Generate detailed HTML content for the topic "${topic.title}" in the context of the chapter titled "${chapter.chapterTitle}" in the course titled "${material.topic}". 
+        The content should include:
+        - "courseTitle": Course title,
+        - "chapterTitle": Chapter title,
+        - "topicTitle": The title of the topic,
+        - "summary": A detailed HTML summary of the topic,
+        - "keyPoints": Key points as an array of strings in HTML format.
+        Maintain the exact structure of the JSON object with the key names "htmlContent", "topicTitle", "summary", and "keyPoints". 
+        Return only the JSON object.`;
 
       try {
-        const chapterContent = await chatSession.sendMessage(chapterPrompt);
-        const rawResponse = await chapterContent.response.text();
-
-        // Clean and parse the AI response
-        const cleanedResponse = rawResponse.replace(/[^\n\t\r\x20-\x7E]+/g, ""); // Remove control characters
-        const parsedResponse = parseAIResponse(cleanedResponse);
-
-        // Use transformAIResponse to ensure consistent structure
-        const transformedContent = transformAIResponse(parsedResponse);
-
+        const response = await generateTopicContent(chapterPrompt);
         updatedTopics.push({
-          title: transformedContent[0]?.topics[0]?.title || topic.title,
-          htmlContent: {
-            summary: transformedContent[0]?.topics[0]?.htmlContent?.summary || "Summary not available.",
-            keyPoints: transformedContent[0]?.topics[0]?.htmlContent?.keyPoints || [],
+          title: topic.title,
+          htmlContent: response.htmlContent || {
+            summary: "No summary provided.",
+            keyPoints: ["No key points available."],
           },
         });
       } catch (error) {
@@ -162,6 +85,7 @@ async function generateChapterNotes(material) {
 
   console.log("Transformed Chapters:", updatedChapters);
 
+  // Update StudyMaterial in DB
   await StudyMaterial.findByIdAndUpdate(
     material._id,
     {
@@ -173,7 +97,6 @@ async function generateChapterNotes(material) {
     { new: true }
   );
 }
-
 
 // POST handler
 export async function POST(req) {
@@ -210,7 +133,7 @@ export async function POST(req) {
   } catch (error) {
     console.error("API Error:", error);
     return NextResponse.json(
-      { error: error || "An unexpected error occurred." },
+      { error: error.message || "An unexpected error occurred." },
       { status: 500 }
     );
   }

@@ -10,7 +10,7 @@ const FlashcardPage = () => {
   const [flashcardData, setFlashcardData] = useState([]);
   const [isFlipped, setIsFlipped] = useState(false);
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
-  const totalChapters = flashcardData.length;
+  const totalChapters = flashcardData?.length;
   const progressPercentage = ((currentChapterIndex + 1) / totalChapters) * 100;
   const [loading, setLoading] = useState(true);
   const [flipPageWidth, setFlipPageWidth] = useState("");
@@ -73,7 +73,7 @@ const FlashcardPage = () => {
 
   return (
     <div className='mx-auto min-h-screen px-3 md:px-10 mt-5' >
-      {flashcardData.length > 0 ? (
+      {flashcardData?.length > 0 ? (
         <>
           <h1 className='text-2xl text-center'>Flashcard's</h1>
           <div className="flex mb-4 justify-center items-center gap-5 mt-6">
