@@ -1,6 +1,7 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { Outfit } from 'next/font/google'
+import AdContainer from "./_compoents/AdContainer";
 
 export const metadata = {
   title: "Create Next App",
@@ -17,6 +18,8 @@ export default function RootLayout({ children }) {
         <body className={outfit.className} key="body-root">
          
           {children}
+          
+        {/* <AdContainer /> */}
         </body>
       </html>
     </ClerkProvider>

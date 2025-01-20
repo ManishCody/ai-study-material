@@ -44,8 +44,8 @@ const Sidebar = () => {
         <Image src='/logo.png' width={140} height={100} alt='LOGO' />
       </div>
       <div className='mt-10'>
-        <Link href={'/create'}>
-          <Button className={` ${creditSc >= 5 ? 'cursor-not-allowed grayscale' : ''} w-full`}>
+        <Link href={creditSc >= 5 ? '#' : '/create'}>
+          <Button className={` ${creditSc >= 5 ? 'cursor-not-allowed  grayscale' : ''} w-full`}>
             + Create New
           </Button>
         </Link>

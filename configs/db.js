@@ -8,10 +8,7 @@ if (!MONGO_URI) {
 
 async function dbConnect() {
   try {
-    await mongoose.connect(MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(MONGO_URI);
     console.log('Database connected successfully');
   } catch (error) {
     console.error('Database connection failed:', error);
