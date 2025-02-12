@@ -8,18 +8,40 @@ import StudyMaterial from '../_components/StudyMaterial';
 import CourseIndex from '../_components/CourseIndex';
 import Spinner from '../_components/Spinner';
 import { Share } from 'lucide-react';
+import MemoryGame from '../_components/MemoryGame';
 
 const Course = () => {
   const { courseid } = useParams();
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showGameDialog, setShowGameDialog] = useState(false);
+  const [showMemoryGame, setShowMemoryGame] = useState(false);
+
+  // Lifted state
+  const [materialsAvailability, setMaterialsAvailability] = useState({
+    notes: false,
+    flashcard: false,
+    quiz: false,
+    questionPaper: false,
+  });
+
+  const [loadingKeys, setLoadingKeys] = useState({}); // Track loading for materials
 
   const getCourseDetail = async () => {
     setLoading(true);
     try {
       const response = await axios.get(`/api/courses?courseid=${courseid}`);
+      console.log(response);
+
       setCourse(response?.data?.course);
+      
+      setMaterialsAvailability({
+        notes: response?.data?.course?.notes || false,
+        flashcard: response?.data?.course?.flashcards?.exists || false,
+        quiz: response?.data?.course?.quizs?.exists || false,
+        questionPaper: response?.data?.course?.questions?.exists || false,
+      });
     } catch (error) {
       console.error("Error fetching course details:", error);
     } finally {
@@ -32,16 +54,23 @@ const Course = () => {
   }, [courseid, refreshKey]);
 
   const handelGenerate = async (key) => {
+    setLoadingKeys((prev) => ({ ...prev, [key]: true })); // Start loading
+    setShowGameDialog(true);
+
     try {
+      console.log(course);
+
       console.log(`Generating ${key} for course ID: ${courseid}`);
-      const response = await axios.post(`/api/generate-${key}`, { topic: course?.topic, studyMaterialId: courseid });
-      setCourse((prevCourse) => ({
-        ...prevCourse,
-        [key]: true,
+      await axios.post(`/api/generate-${key}`, { topic: course?.topic, studyMaterialId: courseid });
+
+      setMaterialsAvailability((prev) => ({
+        ...prev,
+        [key]: true, // Mark material as available
       }));
-      setRefreshKey((prev) => prev + 1);
     } catch (error) {
       console.error('Error generating study material:', error);
+    } finally {
+      setLoadingKeys((prev) => ({ ...prev, [key]: false })); // Stop loading
     }
   };
 
@@ -62,52 +91,74 @@ const Course = () => {
       alert('Course link copied to clipboard!');
     }
   };
+  const handlePlayGame = () => {
+    setShowGameDialog(false);
+    setShowMemoryGame(true);
+  }
 
   if (loading) {
     return <Spinner size="large" color="blue" />;
   }
 
-  if (!course) {
-    return (
-      <div className="flex justify-center items-center min-h-screen text-red-500 font-bold">
-        Error: Unable to load course details.
-      </div>
-    );
-  }
-
-  const materialsAvailability = {
-    notes: course?.notes,
-    flashcard: course?.flashcards?.exists,
-    quiz: course?.quizs?.exists,
-    questionPaper: course?.questions?.exists,
-  };
-
   return (
     <div className="min-h-screen p-0 md:p-4">
       <div className="mx-4 sm:mx-8 md:mx-16 lg:mx-32 mt-10">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">{course?.title}</h1>
-          <button
-            onClick={handleShare}
-            className="bg-blue-500 mb-3 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
-          >
-            <p className='flex justify-center items-center gap-2'>< Share size={20} /> Share</p>
-          </button>
-        </div>
+        <h1 className="text-2xl font-bold">{course?.title}</h1>
+        <button
+          onClick={handleShare}
+          className="bg-blue-500 mb-3 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
+        >
+          <p className='flex justify-center items-center gap-2'>< Share size={20} /> Share</p>
+        </button>
         <CourseIntro course={course} />
         <StudyMaterial
           courseid={courseid}
-          initialAvailability={{
-            notes: course?.notes,
-            flashcard: course?.flashcards?.exists,
-            quiz: course?.quizs?.exists,
-            questionPaper: course?.questions?.exists,
-          }}
+          materialsAvailability={materialsAvailability}
+          setMaterialsAvailability={setMaterialsAvailability}
+          loadingKeys={loadingKeys}
+          setLoadingKeys={setLoadingKeys}
           handelGenerate={handelGenerate}
         />
 
         <CourseIndex courseLayout={course?.courseLayout} />
       </div>
+      {showGameDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg text-center">
+            <h2 className="text-xl font-bold mb-4">Would you like to play a game while your notes are being prepared?</h2>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={handlePlayGame}
+                className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
+              >
+                Yes, Play!
+              </button>
+              <button
+                onClick={() => setShowGameDialog(false)}
+                className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
+              >
+                No, Thanks
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full-Screen Memory Game */}
+      {showMemoryGame && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="relative  p-4 sm:p-6 rounded-lg  w-[90%] max-w-sm">
+            <MemoryGame />
+            <button
+              onClick={() => setShowMemoryGame(false)}
+              className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded"
+            >
+              ✖
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import FlipCard from 'react-card-flip';
 import Spinner from '../../_components/Spinner';
+import { Loader2 } from 'lucide-react';
 
 const FlashcardPage = () => {
   const { courseid } = useParams();
@@ -14,28 +15,34 @@ const FlashcardPage = () => {
   const progressPercentage = ((currentChapterIndex + 1) / totalChapters) * 100;
   const [loading, setLoading] = useState(true);
   const [flipPageWidth, setFlipPageWidth] = useState("");
+  const [Completed, setCompleted] = useState(0);
+  const [isCompleteLoading, setIsCompletedLoading] = useState(false);
+  const [flashcard,setFlashcard]=useState();
 
-    useEffect(() => {
+  let currentPercentage = 0;
+  useEffect(() => {
     if (window.innerWidth > 1450) {
-                    setFlipPageWidth("500");
-                } else {
-                    setFlipPageWidth("300px");
-                }
-    }, []);
+      setFlipPageWidth("500");
+    } else {
+      setFlipPageWidth("300px");
+    }
+  }, []);
+
+  const fetchFlashcardData = async () => {
+    try {
+      const response = await axios.get(`/api/courses?courseid=${courseid}`);
+      setCompleted(response?.data?.course?.Complete);
+      setFlashcard(response?.data?.course?.flashcards)
+      setFlashcardData(response?.data?.course?.flashcards?.data[0]?.flashcards);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching flashcard data:', error);
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (courseid) {
-      const fetchFlashcardData = async () => {
-        try {
-          const response = await axios.get(`/api/courses?courseid=${courseid}`);
-          setFlashcardData(response?.data?.course?.flashcards?.data[0]?.flashcards);
-          setLoading(false);
-        } catch (error) {
-          console.error('Error fetching flashcard data:', error);
-          setLoading(false);
-        }
-      };
-
       fetchFlashcardData();
     }
   }, [courseid]);
@@ -54,11 +61,25 @@ const FlashcardPage = () => {
     }
   };
 
-  const handleComplete = () => {
-    const currentPercentage = parseFloat(localStorage.getItem(courseid)) || 0;
-    const newTotalPercentage = Math.min(currentPercentage + 20, 100).toFixed(2);
+  const handleComplete = async () => {
+    const newTotalPercentage = Math.min(Completed + 20, 100).toFixed(2);
 
-    localStorage.setItem(courseid, newTotalPercentage);
+    try {
+      setIsCompletedLoading(true);
+      const response = await axios.patch(`/api/update-complete-progress?id=${courseid}`, {
+        Complete: newTotalPercentage,
+        isComplete: true,
+        isFlashcard: true,
+      });
+
+      if (response.status === 200) {
+        fetchFlashcardData();
+      }
+    } catch (error) {
+      console.error("Error updating progress:", error);
+    } finally {
+      setIsCompletedLoading(false);
+    }
 
   };
 
@@ -129,10 +150,14 @@ const FlashcardPage = () => {
             {currentChapterIndex === totalChapters - 1 && (
               <div className="text-center mt-6">
                 <button
-                  onClick={handleComplete}
-                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-300"
+                   onClick={handleComplete}
+                   className={`px-4 py-2 mt-2 rounded-lg transition-colors duration-300 ${flashcard.isComplete
+                           ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+                           : "bg-green-500 text-white hover:bg-green-600"
+                       }`}
+                   disabled={flashcard.isComplete}
                 >
-                  Complete
+                  { isCompleteLoading ? <Loader2 className='animate-spin'/> : 'Complete'}
                 </button>
               </div>
             )}
