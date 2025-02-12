@@ -8,28 +8,21 @@ import CourseList from "./_component/CourseList";
 
 const Dashboard = () => {
   const { user, isSignedIn } = useUser();
-  const hasCalledAddUser = useRef(false);  // Ref to track if API has been called
-  console.log(isSignedIn);
-  
+  const prevUserId = useRef(null); // Track previous user ID
+
   useEffect(() => {
-    if (isSignedIn && user && !hasCalledAddUser.current) {
+    if (isSignedIn && user && prevUserId.current !== user.id) {
       const addUser = async () => {
         try {
-          const response = await axios.post(
-            "/api/addUser",
-            {
-              email: user.primaryEmailAddress.emailAddress,
-              name: user.fullName,
-            }
-          );
+          const response = await axios.post("/api/addUser", {
+            email: user.primaryEmailAddress.emailAddress,
+            name: user.fullName ?? user.primaryEmailAddress.emailAddress.slice(0, 6),
+          });
 
           console.log("User check response:", response.data);
-          hasCalledAddUser.current = true;  // Set ref to true after the call is made
+          prevUserId.current = user.id; // Store the user ID to prevent duplicate calls
         } catch (error) {
-          console.error(
-            "Error adding user:",
-            error.response?.data || error.message
-          );
+          console.error("Error adding user:", error);
         }
       };
 
