@@ -72,8 +72,10 @@ export async function POST(req) {
       );
     }
 
-    updatedStudyMaterial.quizs.exists = true;
-    updatedStudyMaterial.quizs.data = quiz;
+    updatedStudyMaterial.quizs = {
+      exists: true,
+      data: quiz || []
+    };
     await updatedStudyMaterial.save();
 
 

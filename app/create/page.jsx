@@ -16,7 +16,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
-import DinoGame from "./_component/DinoGame";
 
 const Create = () => {
   const [steps, setSteps] = useState(0);

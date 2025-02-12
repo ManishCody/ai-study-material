@@ -11,12 +11,12 @@ const CourseCard = ({ courses }) => {
   };
 
   const getProgressPercentage = (courseId) => {
-    const percentage = localStorage.getItem(courseId);
-    return percentage ? parseInt(percentage) : 0;
+    return courses
   };
 
   storeCourseInfo(courses?._id, 0);
-
+  console.log(courses);
+  
   return (
     <div className="bg-white shadow-lg rounded-xl overflow-hidden transform transition-transform hover:scale-105 duration-300 hover:shadow-2xl">
       {/* Course Image */}
@@ -63,12 +63,12 @@ const CourseCard = ({ courses }) => {
         <div className="mb-4">
           <p className="text-xs text-gray-500 mb-1">Completion Progress</p>
           <Progress
-            value={getProgressPercentage(courses?._id) || 0} 
+            value={courses.Complete || 0} 
             className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden"
           >
             <div
               className="absolute h-full bg-teal-500 rounded-full"
-              style={{width: `${getProgressPercentage(courses?._id)}%` }}
+              style={{width: `${courses.Complete}%` }}
             ></div>
           </Progress>
         </div>

@@ -3,7 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 const CourseIntro = ({ course }) => {
-  const [progress, setProgress] = useState(localStorage.getItem(course._id) || 0);
+  const [progress, setProgress] = useState(course.Complete || 0);
+  console.log(course);
+  
 
   return (
     <motion.div
@@ -15,7 +17,7 @@ const CourseIntro = ({ course }) => {
       <img
         src={course?.topicImage || 'https://i.postimg.cc/158Hpvj6/vector-design-online-learn-study-260nw-2428847413-removebg-preview.png'}
         alt="Course Topic"
-        className="w-auto h-20 sm:h-28 object-cover rounded-md shadow-lg"
+        className="w-auto h-20 sm:h-28 object-cover rounded-md "
         onError={(e) => {
           e.target.src =
             "https://i.postimg.cc/158Hpvj6/vector-design-online-learn-study-260nw-2428847413-removebg-preview.png";

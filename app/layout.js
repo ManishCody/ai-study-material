@@ -13,12 +13,11 @@ const outfit = Outfit({ subsets: ["latin"], display: "swap" });
 
 export default function RootLayout({ children }) {
   return (
-    <ClerkProvider>
+    <ClerkProvider isomorphic>
       <html lang="en" key="html-root">
-        <body className={outfit.className} key="body-root">
+        <body suppressHydrationWarning={true} className={outfit.className} key="body-root">
          
           {children}
-          
         {/* <AdContainer /> */}
         </body>
       </html>

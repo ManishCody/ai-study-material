@@ -5,10 +5,12 @@ const StudyMaterialSchema = new mongoose.Schema({
   courseType: { type: String, required: true, maxlength: 224 },
   topic: { type: String, required: true, maxlength: 224 },
   difficultyLevel: { type: String, default: 'Easy', maxlength: 224 },
+  Complete: { type: Number, default: 0, min: 0, max: 100 },
   courseLayout: {
     chapters: [
       {
         chapterTitle: { type: String, required: true },
+        isComplete: { type: Boolean, default: false },
         topics: [
           {
             title: { type: String },
@@ -32,14 +34,17 @@ const StudyMaterialSchema = new mongoose.Schema({
   flashcards: {
     exists: { type: Boolean, default: false },
     data: { type: Array, default: [] },
+    isComplete: { type: Boolean, default: false }
   },
   quizs: {
     exists: { type: Boolean, default: false },
     data: { type: Array, default: [] },
+    isComplete: { type: Boolean, default: false }
   },
   questions: {
     exists: { type: Boolean, default: false },
     data: { type: Array, default: [] },
+    isComplete: { type: Boolean, default: false }
   },
 }, { timestamps: true });
 

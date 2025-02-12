@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useParams } from "next/navigation";
 import Spinner from "../../_components/Spinner";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
 const CourseLayout = () => {
   const { courseid } = useParams();
@@ -11,10 +12,12 @@ const CourseLayout = () => {
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [progressData, setProgressData] = useState({ completedChapters: new Set(), percentage: 0 });
-
+  const [completing, setCompleting] = useState(false);
+  const [completed, setCompleted] = useState(0);
   const fetchCourseLayout = async () => {
     try {
       const response = await axios.get(`/api/courses?courseid=${courseid}`);
+      setCompleted(response?.data?.course?.Complete)
       setCourseLayout(response?.data?.course?.courseLayout);
       setLoading(false);
     } catch (error) {
@@ -51,24 +54,44 @@ const CourseLayout = () => {
   const currentChapter = courseLayout?.chapters[currentChapterIndex];
   const progressPercentage = ((currentChapterIndex + 1) / totalChapters) * 100;
 
-  const handelComplete = () => {
-    const currentPercentage = parseFloat(localStorage.getItem(courseid)) || 0;
-    console.log(currentPercentage);
+  const handleComplete = async () => {
+    if (completing || currentChapter?.isComplete) return;
 
-    const oneChapterWeightage = 40 / totalChapters;
-    const newTotalPercentage = (currentPercentage + oneChapterWeightage).toFixed(2);
-    localStorage.setItem(courseid, newTotalPercentage);
-    console.log(newTotalPercentage);
+    setCompleting(true);
 
+    try {
 
-    setProgressData((prev) => ({
-      ...prev,
-      percentage: parseFloat(newTotalPercentage),
-      completedChapters: new Set([...prev.completedChapters, currentChapterIndex + 1]),
-    }));
+      const notesWeightage = 40; // Total weightage assigned to notes
+      const topicWeightage = notesWeightage / totalChapters; // Weightage per topic
 
+      const newProgress = parseFloat(completed) + parseFloat(topicWeightage); 
 
+      const updatedComplete = Math.min(newProgress, notesWeightage);
+
+      const response = await axios.patch(`/api/update-complete-progress?id=${courseid}`, {
+        Complete: updatedComplete.toFixed(2),
+        isComplete: true,
+        chapter_id: currentChapter._id,
+        isNotes: true,
+      });
+      console.log(response);
+
+      if (response.status === 200) {
+        setProgressData((prev) => ({
+          ...prev,
+          percentage: updatedComplete.toFixed(2),
+          completedChapters: new Set([...prev.completedChapters, currentChapterIndex + 1]),
+        }));
+        fetchCourseLayout();
+      }
+    } catch (error) {
+      console.error("Error updating progress:", error);
+    } finally {
+      setCompleting(false);
+    }
   };
+
+  console.log(currentChapter);
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8">
@@ -78,8 +101,8 @@ const CourseLayout = () => {
           onClick={handlePrevious}
           disabled={currentChapterIndex === 0}
           className={`px-2 py-1 rounded-lg font-medium ${currentChapterIndex === 0
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300"
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300"
             }`}
         >
           Previous
@@ -94,8 +117,8 @@ const CourseLayout = () => {
           onClick={handleNext}
           disabled={currentChapterIndex === totalChapters - 1}
           className={`px-2 py-1 rounded-lg font-medium ${currentChapterIndex === totalChapters - 1
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300"
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300"
             }`}
         >
           Next
@@ -144,8 +167,8 @@ const CourseLayout = () => {
           onClick={handlePrevious}
           disabled={currentChapterIndex === 0}
           className={`px-2 py-1 rounded-lg font-medium ${currentChapterIndex === 0
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300"
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300"
             }`}
         >
           Previous
@@ -153,16 +176,15 @@ const CourseLayout = () => {
 
         {/* Center Section */}
         <div className="flex flex-wrap justify-center items-center gap-4">
-          {/* Complete Chapter Button */}
           <button
-            disabled={progressData?.completedChapters?.has(currentChapterIndex + 1)}
-            onClick={handelComplete}
-            className={`${progressData?.completedChapters?.has(currentChapterIndex + 1)
-                ? "cursor-not-allowed grayscale"
-                : ""
-              } px-4 py-2 rounded-lg bg-green-500 text-white font-semibold hover:bg-green-600 transition-colors duration-300`}
+            disabled={completing || currentChapter?.isComplete}
+            onClick={handleComplete}
+            className={`px-4 py-2 flex justify-center items-center rounded-lg bg-green-500 text-white font-semibold transition-colors duration-300 
+    ${currentChapter?.isComplete || completing ? "cursor-not-allowed grayscale" : "hover:bg-green-600"}`}
           >
-            Complete 
+            {completing ? <>
+              <AiOutlineLoading3Quarters className="animate-spin" size={20} />
+            </> : "Complete"}
           </button>
 
           {/* Next Button */}
@@ -170,8 +192,8 @@ const CourseLayout = () => {
             onClick={handleNext}
             disabled={currentChapterIndex === totalChapters - 1}
             className={`px-2 py-1 rounded-lg font-medium ${currentChapterIndex === totalChapters - 1
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300"
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300"
               }`}
           >
             Next

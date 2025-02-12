@@ -2,10 +2,7 @@ import Link from 'next/link';
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
-const StudyMaterial = ({ initialAvailability, courseid, handelGenerate }) => {
-  const [materialsAvailability, setMaterialsAvailability] = useState(initialAvailability);
-  const [loadingKeys, setLoadingKeys] = useState({}); // Track loading for materials
-
+const StudyMaterial = ({ courseid, materialsAvailability, setMaterialsAvailability, loadingKeys, setLoadingKeys, handelGenerate}) => {
   const materials = [
     { key: 'notes', title: 'Notes', description: 'Read notes to prepare for the exam.', image: '/notes.png' },
     { key: 'flashcard', title: 'Flashcards', description: 'Memorize with flipping flashcards.', image: '/study.png' },
@@ -17,7 +14,7 @@ const StudyMaterial = ({ initialAvailability, courseid, handelGenerate }) => {
     setLoadingKeys((prev) => ({ ...prev, [key]: true })); // Start loading
 
     try {
-      await handelGenerate(key); // Call the generation API
+      await handelGenerate(key);
       setMaterialsAvailability((prev) => ({
         ...prev,
         [key]: true, // Mark material as available
@@ -45,32 +42,18 @@ const StudyMaterial = ({ initialAvailability, courseid, handelGenerate }) => {
             transition={{ duration: 0.3 }}
           >
             <h3 className="font-bold text-lg">{material.title}</h3>
-            <div className="relative w-24 h-24 overflow-hidden rounded-md">
-              <img
-                src={material.image}
-                alt={material.title}
-                className={`w-full h-full object-cover rounded-md transition-transform duration-300 ease-in-out transform ${
-                  isAvailable ? 'border-gray-200' : 'border-gray-400 grayscale'
-                }`}
-              />
-              {/* Hover Effect */}
-              <div className="absolute inset-0 bg-black opacity-0 hover:opacity-30 transition-opacity duration-300"></div>
-            </div>
-            <p className="text-center leading-relaxed">{material.description}</p>
+            <img src={material.image} alt={material.title} className="w-24 h-24 rounded-md" />
+            <p className="text-center">{material.description}</p>
+
             {isAvailable ? (
               <Link className="w-full" href={`/course/${courseid}/${material.key}`}>
-                <motion.button
-                  className="px-6 py-1 w-full rounded-lg bg-blue-500 text-white hover:bg-blue-600"
-                  whileTap={{ scale: 0.95 }}
-                >
+                <motion.button className="px-6 py-1 w-full rounded-lg bg-blue-500 text-white hover:bg-blue-600">
                   View
                 </motion.button>
               </Link>
             ) : (
               <button
-                className={`px-6 py-1 w-full rounded-lg ${
-                  isLoading ? 'bg-blue-400' : 'bg-gray-400'
-                }`}
+                className={`px-6 py-1 w-full rounded-lg ${isLoading ? 'bg-blue-400' : 'bg-gray-400'}`}
                 onClick={() => handleMaterialGenerate(material.key)}
                 disabled={isLoading}
               >
@@ -85,3 +68,5 @@ const StudyMaterial = ({ initialAvailability, courseid, handelGenerate }) => {
 };
 
 export default StudyMaterial;
+
+
