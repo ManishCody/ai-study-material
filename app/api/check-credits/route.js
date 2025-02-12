@@ -1,23 +1,26 @@
 import dbConnect from "@/configs/db"; 
 import User from "@/models/User";
 
-export async function GET(req, res) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ success: false, message: "Method not allowed" });
-  }
-
-  const { email } = req.query;
-
-  if (!email || typeof email !== "string") {
-    return res.status(400).json({ success: false, message: "Invalid email" });
-  }
-
+export async function GET(req) {
   try {
-    await dbConnect(); 
+    const { searchParams } = new URL(req.url);
+    const email = searchParams.get("email");
+    
+    if (!email) {
+      return new Response(JSON.stringify({ success: false, message: "Invalid email" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    await dbConnect();
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return new Response(JSON.stringify({ success: false, message: "User not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const isElite = user.isElite || false;
@@ -25,24 +28,23 @@ export async function GET(req, res) {
     const isMember = user.isMember || false;
 
     let hasCredits = false;
-
     if (isElite) {
-      hasCredits = true;  
+      hasCredits = true;
     } else if (isPremium) {
-      hasCredits = user.creditScore >= 20; 
+      hasCredits = user.creditScore <= 20;
     } else {
-      hasCredits = user.creditScore >= 5; 
+      hasCredits = user.creditScore <= 5;
     }
 
-    return res.status(200).json({ 
-      success: true, 
-      hasCredits, 
-      isMember, 
-      isPremium, 
-      isElite 
-    });
+    return new Response(
+      JSON.stringify({ success: true, hasCredits, isMember, isPremium, isElite }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
   } catch (error) {
-    console.error("Error checking credits:", error);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    console.error("Error checking credits:", error.message);
+    return new Response(JSON.stringify({ success: false, message: "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
