@@ -16,7 +16,8 @@ export default clerkMiddleware(async (auth, req) => {
         const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/check-credits`, {
           params: { email: userEmail },
         });
-
+        console.log(res);
+        
         if (!res.data.hasCredits) {
           return NextResponse.redirect(new URL("/dashboard", req.url)); // Redirect if no credits
         }
