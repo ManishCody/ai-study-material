@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import SelectOption from "./_component/SelectOption";
 import { Button } from "@/components/ui/button";
 import TopicInput from "./_component/TopicInput";
@@ -26,8 +26,38 @@ const Create = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { user } = useUser();
+  const { isLoaded, isSignedIn, user } = useUser();
   const router = useRouter();
+
+  // Check user authentication & credits
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    if (!isSignedIn) {
+      router.replace("/sign-in");
+      return;
+    }
+
+    const checkUserCredits = async () => {
+      try {
+        const userEmail = user?.primaryEmailAddress?.emailAddress;
+        console.log(userEmail);
+        
+
+        const res = await axios.get(`/api/check-credits`, {
+          params: { email: userEmail },
+        });
+        
+        if (!res.data.hasCredits) {
+          router.replace("/dashboard");
+        }
+      } catch (err) {
+        router.replace("/dashboard");
+      }
+    };
+
+    checkUserCredits();
+  }, [isLoaded, isSignedIn, user, router]);
 
   const handleFormChange = (fieldName, value) => {
     setFormData((prev) => ({ ...prev, [fieldName]: value }));
@@ -65,7 +95,6 @@ const Create = () => {
         setError("An error occurred. Please try again later.");
       }
       console.log(err);
-      
     } finally {
       setLoading(false);
     }
@@ -122,13 +151,6 @@ const Create = () => {
           </div>
         )}
       </div>
-
-      {/* Dinosaur Game */}
-      {/* {loading && (
-        // <div className="flex flex-col items-center justify-center w-full h-96 mt-5">
-        //   <DinoGame />
-        // </div>
-      )} */}
 
       {/* Error Dialog */}
       {error && (

@@ -4,21 +4,18 @@ import User from "@/models/User";
 
 export async function POST(req) {
   try {
-    console.log("API Route Hit");
 
     await dbConnect();
     console.log("Database connected successfully");
 
     const body = await req.json();
-    console.log("Received Request Body:", body); 
 
     const { email, name } = body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      console.log("User already exists:", existingUser);
       return NextResponse.json(
-        { success: true, message: "User already exists" },
+        { success: false, message: "User already exists" },
         { status: 200 }
       );  
     }
