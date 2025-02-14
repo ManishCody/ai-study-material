@@ -40,9 +40,7 @@ const Create = () => {
 
     const checkUserCredits = async () => {
       try {
-        const userEmail = user?.primaryEmailAddress?.emailAddress;
-        console.log(userEmail);
-        
+        const userEmail = user?.primaryEmailAddress?.emailAddress;        
 
         const res = await axios.get(`/api/check-credits`, {
           params: { email: userEmail },
@@ -94,7 +92,6 @@ const Create = () => {
       if (status === 400 || status === 500) {
         setError("An error occurred. Please try again later.");
       }
-      console.log(err);
     } finally {
       setLoading(false);
     }

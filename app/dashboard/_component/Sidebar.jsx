@@ -3,16 +3,18 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { useUser } from '@clerk/nextjs'
 import axios from 'axios'
-import { LayoutDashboard, Shield , Gamepad} from 'lucide-react'
+import { LayoutDashboard, Shield, Gamepad } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
 
 const Sidebar = () => {
   const [creditSc, setCreditSc] = useState(0);
   const { user } = useUser();
-  
+  const path = usePathname();
+  const router = useRouter();
+
   const MenueList = [
     {
       name: "Dashboard",
@@ -31,12 +33,22 @@ const Sidebar = () => {
     }
   ];
 
-  const path = usePathname();
-
   useEffect(() => {
-    const credits = localStorage.getItem("creditSc");
-    setCreditSc(credits ? parseInt(credits, 10) : 0); // Parse stored credits as integer
-  }, [path]);
+    const fetchCredits = async () => {
+      try {
+        const response = await axios.get("/api/check-credits", {
+          params: { email: user?.primaryEmailAddress?.emailAddress }
+        });
+        setCreditSc(response.data.CrScore || 0);
+      } catch (err) {
+        console.error("Error fetching credit score:", err);
+      }
+    };
+
+    if (user) {
+      fetchCredits();
+    }
+  }, [user, path]);
 
   return (
     <div className='h-screen mt-14 md:mt-14 relative shadow-lg p-5 m-0'>
@@ -45,34 +57,23 @@ const Sidebar = () => {
       </div>
       <div className='mt-10'>
         <Link href={creditSc >= 5 ? '#' : '/create'}>
-          <Button className={` ${creditSc >= 5 ? 'cursor-not-allowed  grayscale' : ''} w-full`}>
+          <Button className={` ${creditSc >= 5 ? 'cursor-not-allowed grayscale' : ''} w-full`}>
             + Create New
           </Button>
         </Link>
         <div className='flex mt-3 flex-col justify-center items-baseline'>
-          {MenueList.map((item, idx) => {
-            return item.onClick ? (
+          {MenueList.map((item, idx) => (
+            <Link key={idx} href={item.path} className='w-full'>
               <div
-                key={idx}
-                className='flex gap-3 items-center hover:bg-slate-200 rounded-lg cursor-pointer p-3 w-full'
-                onClick={item.onClick} // Trigger logout on click
+                className={`flex gap-3 items-center hover:bg-slate-200 rounded-lg cursor-pointer p-3 w-full ${
+                  path === item.path && 'bg-slate-200'
+                }`}
               >
                 <item.icon />
                 <h2>{item.name}</h2>
               </div>
-            ) : (
-              <Link key={idx} href={item.path} className='w-full'>
-                <div
-                  className={`flex gap-3 items-center hover:bg-slate-200 rounded-lg cursor-pointer p-3 w-full ${
-                    path === item.path && 'bg-slate-200'
-                  }`}
-                >
-                  <item.icon />
-                  <h2>{item.name}</h2>
-                </div>
-              </Link>
-            );
-          })}
+            </Link>
+          ))}
         </div>
       </div>
       <div className="bg-slate-200 p-3 w-[85%] rounded-lg absolute bottom-[75px] md:bottom-18">

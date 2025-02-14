@@ -32,7 +32,7 @@ const Course = () => {
     setLoading(true);
     try {
       const response = await axios.get(`/api/courses?courseid=${courseid}`);
-      console.log(response);
+      
 
       setCourse(response?.data?.course);
       
@@ -58,9 +58,6 @@ const Course = () => {
     setShowGameDialog(true);
 
     try {
-      console.log(course);
-
-      console.log(`Generating ${key} for course ID: ${courseid}`);
       await axios.post(`/api/generate-${key}`, { topic: course?.topic, studyMaterialId: courseid });
 
       setMaterialsAvailability((prev) => ({

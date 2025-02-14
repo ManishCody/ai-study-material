@@ -1,5 +1,6 @@
 import dbConnect from "@/configs/db";
 import StudyMaterial from "@/models/StudyMaterial";
+import User from "@/models/User";
 import { chatSession } from "@/configs/AIModel";
 import { NextResponse } from "next/server";
 
@@ -74,6 +75,14 @@ export async function POST(req) {
         { status: 400 }
       );
     }
+
+    const user = await User.findOne({ email: createdBy });
+
+    if (user) {
+      user.creditScore = user.creditScore + 1;
+      await user.save();
+    }
+    
 
     const prompt = `Generate study material for the topic "${topic}" for an ${courseType}. The difficulty level should be ${difficultyLevel}. The study material must adhere to the following structure and constraints:
 

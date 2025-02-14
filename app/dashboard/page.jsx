@@ -18,8 +18,6 @@ const Dashboard = () => {
             email: user.primaryEmailAddress.emailAddress,
             name: user.fullName ?? user.primaryEmailAddress.emailAddress.slice(0, 6),
           });
-
-          console.log("User check response:", response.data);
           prevUserId.current = user.id; // Store the user ID to prevent duplicate calls
         } catch (error) {
           console.error("Error adding user:", error);
