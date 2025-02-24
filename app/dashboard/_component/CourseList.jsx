@@ -20,7 +20,7 @@ const CourseList = () => {
         } catch (error) {
             console.error("Error fetching course list:", error);
         } finally {
-            setLoading(false); // Ensure loading stops in case of an error
+            setLoading(false); 
         }
     };
 

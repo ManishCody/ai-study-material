@@ -82,7 +82,7 @@ export async function POST(req) {
       user.creditScore = user.creditScore + 1;
       await user.save();
     }
-    
+
 
     const prompt = `Generate study material for the topic "${topic}" for an ${courseType}. The difficulty level should be ${difficultyLevel}. The study material must adhere to the following structure and constraints:
 
@@ -90,6 +90,7 @@ export async function POST(req) {
 - The JSON object should have the following fields:
   - course_summary: A string containing a detailed summary of the entire course.
   - image_url: A string containing a single URL that represents the topic '${topic}'.
+  - courseLabel: A string representing the most suitable label for this topic. Choose from one of the following options: "ENGINEERING", "SCIENCE", "MATHEMATICS", "TECHNOLOGY" , "OTHER" if none of these specifically apply.
   - chapters: An array, where each element is an object with:
     - title: A string representing the chapter's title.
     - topics: An array of strings, where each string is the name of a topic within the chapter.
@@ -97,8 +98,10 @@ export async function POST(req) {
 The JSON output must follow this exact structure and format. No extraneous characters or non-JSON output should be included.`;
 
     const aiResult = await sendRequestWithRetry(prompt);
-
+    console.log(aiResult);
+    
     const transformedChapters = transformAIResponse(aiResult);
+    console.log(transformedChapters);
 
     const studyMaterial = new StudyMaterial({
       courseId,
@@ -110,9 +113,16 @@ The JSON output must follow this exact structure and format. No extraneous chara
       course_summary: aiResult?.course_summary,
       topicImage: aiResult?.image_url || "",
       status: "Pending",
+      courseLabel: aiResult.courseLabel,
     });
 
     const savedMaterial = await studyMaterial.save();
+
+    if (user) {
+      await User.findByIdAndUpdate(user._id, {
+        $addToSet: { courseLabels: aiResult.courseLabel }, // Ensures unique values
+      });
+    }
 
     return NextResponse.json({ result: savedMaterial });
   } catch (error) {

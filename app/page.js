@@ -12,6 +12,7 @@ export default function Home() {
   useEffect(() => {
     if (user) {
       localStorage.setItem("userEmail", user?.primaryEmailAddress?.emailAddress); 
+      localStorage.setItem("CLERK_USER_ID", user?.id); 
     }
   }, [user]); 
 
