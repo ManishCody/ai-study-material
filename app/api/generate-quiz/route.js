@@ -8,7 +8,7 @@ function parseAIResponse(responseText) {
   try {
     return JSON.parse(responseText);
   } catch (error) {
-    console.error("Failed to parse AI response:", error);
+    console.log("Failed to parse AI response:", error);
     return [];
   }
 }
@@ -30,7 +30,7 @@ async function sendRequestWithRetry(prompt) {
         );
         await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
       } else {
-        console.error("AI request failed:", error);
+        console.log("AI request failed:", error);
         throw new Error("Failed to generate quiz.");
       }
     }
@@ -81,7 +81,7 @@ export async function POST(req) {
 
     return NextResponse.json({ message: "quiz stored successfully", updatedStudyMaterial });
   } catch (error) {
-    console.error("API Error:", error);
+    console.log("API Error:", error);
     return NextResponse.json(
       { error: error.message || "An unexpected error occurred." },
       { status: 500 }

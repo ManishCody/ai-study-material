@@ -16,9 +16,9 @@ export default function RootLayout({ children }) {
     <ClerkProvider isomorphic>
       <html lang="en" key="html-root">
         <body suppressHydrationWarning={true} className={outfit.className} key="body-root">
-         
+
           {children}
-        {/* <AdContainer /> */}
+          <AdContainer />
         </body>
       </html>
     </ClerkProvider>

@@ -42,7 +42,7 @@ export async function POST(req) {
     }
   } catch (error) {
     // Log the error for debugging purposes
-    console.error(error);
+    console.log(error);
 
     // Return a response indicating an error occurred
     return NextResponse.json(

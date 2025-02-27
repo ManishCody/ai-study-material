@@ -20,7 +20,7 @@ const StudyMaterial = ({ courseid, materialsAvailability, setMaterialsAvailabili
         [key]: true, // Mark material as available
       }));
     } catch (error) {
-      console.error(`Error generating ${key}:`, error);
+      console.log(`Error generating ${key}:`, error);
     } finally {
       setLoadingKeys((prev) => ({ ...prev, [key]: false })); // Stop loading
     }

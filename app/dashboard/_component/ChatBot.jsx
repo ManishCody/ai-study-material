@@ -52,7 +52,7 @@ export default function ChatBot() {
       };
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
-      console.error('Error:', error);
+      console.log('Error:', error);
     } finally {
       setIsTyping(false);
     }

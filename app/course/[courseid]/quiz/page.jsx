@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { Loader2 } from "lucide-react";
 
 
-const IncorrectAnswer = ({ question, selectedOption, answer }) => {
+const IncorrectAnswer = ({ question, selectedOption, correct_answer }) => {
     return (
         <div className="mb-3 p-4 border border-red-500 rounded-lg bg-red-50 shadow-md">
             <div className="flex gap-2">
@@ -20,7 +20,7 @@ const IncorrectAnswer = ({ question, selectedOption, answer }) => {
             </div>
             <div className="flex gap-2">
                 <p className="text-green-500 font-semibold">Correct Answer:</p>
-                <p className="text-green-500">{answer}</p>
+                <p className="text-green-500">{correct_answer}</p>
             </div>
         </div>
     );
@@ -48,7 +48,7 @@ const QuizPage = () => {
             setQuizData(response?.data?.course?.quizs|| []);
             setQuiz(response?.data?.course?.quizs?.data[0]?.questions || []);
         } catch (error) {
-            console.error("Error fetching quiz data:", error);
+            console.log("Error fetching quiz data:", error);
             setLoading(false);
         }
     };
@@ -64,14 +64,13 @@ const QuizPage = () => {
     }
 
     const handleNext = () => {
-        if (selectedOption === quiz[currentQuestionIndex].answer) {
+        if (selectedOption === quiz[currentQuestionIndex].correct_answer) {
             setScore(score + 1);
         } else {
             setWrongAnswer((prev) => [...prev, {
                 ...quiz[currentQuestionIndex],
                 selectedOption: selectedOption,
             },])
-            console.log(wrongAnswer);
 
         }
         setSelectedOption(null);
@@ -106,7 +105,7 @@ const QuizPage = () => {
                 fetchQuizData();
             }
         } catch (error) {
-            console.error("Error updating progress:", error);
+            console.log("Error updating progress:", error);
         } finally {
             setIsCompletedLoading(false);
         }
@@ -236,7 +235,7 @@ const QuizPage = () => {
                                             key={index}
                                             question={question?.question}
                                             selectedOption={question?.selectedOption}
-                                            answer={question?.answer}
+                                            correct_answer={question?.correct_answer}
                                         />
                                     ))}
                                 </ol>

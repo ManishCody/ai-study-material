@@ -36,7 +36,7 @@ const FlashcardPage = () => {
       setFlashcardData(response?.data?.course?.flashcards?.data[0]?.flashcards);
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching flashcard data:', error);
+      console.log('Error fetching flashcard data:', error);
       setLoading(false);
     }
   };
@@ -76,7 +76,7 @@ const FlashcardPage = () => {
         fetchFlashcardData();
       }
     } catch (error) {
-      console.error("Error updating progress:", error);
+      console.log("Error updating progress:", error);
     } finally {
       setIsCompletedLoading(false);
     }
