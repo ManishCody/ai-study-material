@@ -20,7 +20,7 @@ const Dashboard = () => {
           });
           prevUserId.current = user.id; // Store the user ID to prevent duplicate calls
         } catch (error) {
-          console.error("Error adding user:", error);
+          console.log("Error adding user:", error);
         }
       };
 

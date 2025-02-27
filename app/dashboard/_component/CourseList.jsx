@@ -18,7 +18,7 @@ const CourseList = () => {
             setCourseList(res?.data?.result);
             localStorage.setItem("creditSc", res?.data?.result?.length);
         } catch (error) {
-            console.error("Error fetching course list:", error);
+            console.log("Error fetching course list:", error);
         } finally {
             setLoading(false); 
         }

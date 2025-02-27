@@ -18,7 +18,7 @@ export default function RootLayout({ children }) {
         <body suppressHydrationWarning={true} className={outfit.className} key="body-root">
 
           {children}
-          {/* <AdContainer /> */}
+          <AdContainer />
         </body>
       </html>
     </ClerkProvider>

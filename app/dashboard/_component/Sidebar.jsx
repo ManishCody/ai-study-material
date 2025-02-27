@@ -41,7 +41,7 @@ const Sidebar = () => {
         });
         setCreditSc(response.data.CrScore || 0);
       } catch (err) {
-        console.error("Error fetching credit score:", err);
+        console.log("Error fetching credit score:", err);
       }
     };
 

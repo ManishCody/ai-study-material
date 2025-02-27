@@ -26,7 +26,7 @@ function transformAIResponse(aiResult) {
       })) || [],
     }));
   } catch (error) {
-    console.error("Error transforming AI response:", error);
+    console.log("Error transforming AI response:", error);
     return [];
   }
 }
@@ -53,7 +53,7 @@ async function sendRequestWithRetry(prompt) {
         );
         await new Promise((resolve) => setTimeout(resolve, delay));
       } else {
-        console.error("Failed to process AI request:", error?.message || error);
+        console.log("Failed to process AI request:", error?.message || error);
       }
     }
   }
@@ -126,7 +126,7 @@ The JSON output must follow this exact structure and format. No extraneous chara
 
     return NextResponse.json({ result: savedMaterial });
   } catch (error) {
-    console.error("API Error:", error);
+    console.log("API Error:", error);
     return NextResponse.json(
       { error: error.message || "An unexpected error occurred." },
       { status: 500 }

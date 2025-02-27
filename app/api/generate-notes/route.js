@@ -8,7 +8,7 @@ function parseAIResponse(responseText) {
   try {
     return JSON.parse(responseText);
   } catch (error) {
-    console.error("Failed to parse AI response:", error);
+    console.log("Failed to parse AI response:", error);
     return null;
   }
 }
@@ -30,7 +30,7 @@ async function generateTopicContent(chapterPrompt, retries = 3, delayMs = 1000) 
       if (parsedResponse) return parsedResponse;
       throw new Error("Empty or invalid AI response.");
     } catch (error) {
-      console.error(`Error during AI request (attempt ${i + 1}):`, error);
+      console.log(`Error during AI request (attempt ${i + 1}):`, error);
       if (i < retries - 1) await delay(delayMs * (i + 1)); // Exponential backoff
     }
   }
@@ -66,7 +66,7 @@ async function generateChapterNotes(material) {
           },
         });
       } catch (error) {
-        console.error(`Failed to generate content for topic "${topic.title}":`, error);
+        console.log(`Failed to generate content for topic "${topic.title}":`, error);
         updatedTopics.push({
           title: topic.title,
           htmlContent: {
@@ -131,7 +131,7 @@ export async function POST(req) {
       studyMaterial,
     });
   } catch (error) {
-    console.error("API Error:", error);
+    console.log("API Error:", error);
     return NextResponse.json(
       { error: error.message || "An unexpected error occurred." },
       { status: 500 }

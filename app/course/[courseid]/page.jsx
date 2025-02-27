@@ -43,7 +43,7 @@ const Course = () => {
         questionPaper: response?.data?.course?.questions?.exists || false,
       });
     } catch (error) {
-      console.error("Error fetching course details:", error);
+      console.log("Error fetching course details:", error);
     } finally {
       setLoading(false);
     }
@@ -65,7 +65,7 @@ const Course = () => {
         [key]: true, // Mark material as available
       }));
     } catch (error) {
-      console.error('Error generating study material:', error);
+      console.log('Error generating study material:', error);
     } finally {
       setLoadingKeys((prev) => ({ ...prev, [key]: false })); // Stop loading
     }
@@ -82,7 +82,7 @@ const Course = () => {
       navigator
         .share(shareData)
         .then(() => console.log('Course shared successfully'))
-        .catch((error) => console.error('Error sharing:', error));
+        .catch((error) => console.log('Error sharing:', error));
     } else {
       navigator.clipboard.writeText(shareData.url);
       alert('Course link copied to clipboard!');

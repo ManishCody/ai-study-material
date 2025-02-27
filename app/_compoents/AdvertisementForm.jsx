@@ -117,11 +117,14 @@ const AdvertisementForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      console.log(formData);
-      await axios.post("/api/create-adv", formData);
+      const formattedData = {
+        ...formData,
+        advLabel: formData.advLabel.map(label => label.toUpperCase()) 
+      };
+      await axios.post("/api/create-adv", formattedData);
       toast.success("Advertisement created successfully!");
     } catch (error) {
-      console.error("Error:", error);
+      console.log("Error:", error);
       toast.error("Failed to create advertisement. Please try again.");
     }finally{
       setFormData({

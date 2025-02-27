@@ -35,7 +35,7 @@ export async function POST(req) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error adding user:", error);
+    console.log("Error adding user:", error);
     return NextResponse.json(
       { error: error.message || "Internal Server Error" },
       { status: 500 }

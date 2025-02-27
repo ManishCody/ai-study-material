@@ -21,7 +21,7 @@ const CourseLayout = () => {
       setCourseLayout(response?.data?.course?.courseLayout);
       setLoading(false);
     } catch (error) {
-      console.error("Error fetching course layout:", error);
+      console.log("Error fetching course layout:", error);
       setLoading(false);
     }
   };
@@ -85,7 +85,7 @@ const CourseLayout = () => {
         fetchCourseLayout();
       }
     } catch (error) {
-      console.error("Error updating progress:", error);
+      console.log("Error updating progress:", error);
     } finally {
       setCompleting(false);
     }

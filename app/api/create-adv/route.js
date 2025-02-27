@@ -20,7 +20,7 @@ export async function POST(req) {
     // Return a successful JSON response
     return NextResponse.json({ success: true, data: newAd });
   } catch (error) {
-    console.error("Error creating advertisement:", error);
+    console.log("Error creating advertisement:", error);
     return NextResponse.json(
       { success: false, message: error.message },
       { status: 500 }

@@ -25,7 +25,7 @@ const QuizPage = () => {
       setQuestionData(response?.data?.course?.questions?.data || []);
       setLoading(false);
     } catch (error) {
-      console.error("Error fetching quiz data:", error);
+      console.log("Error fetching quiz data:", error);
       setLoading(false);
     }
   };
@@ -75,7 +75,7 @@ const QuizPage = () => {
         fetchQuestionPaper();
       }
     } catch (error) {
-      console.error("Error updating progress:", error);
+      console.log("Error updating progress:", error);
     } finally {
       setIsCompletedLoading(false);
     }
