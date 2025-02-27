@@ -1,11 +1,11 @@
-import dbConnect from "@/configs/db"; 
+import dbConnect from "@/configs/db";
 import User from "@/models/User";
 
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     const email = searchParams.get("email");
-    
+
     if (!email) {
       return new Response(JSON.stringify({ success: false, message: "Invalid email" }), {
         status: 400,
@@ -25,23 +25,28 @@ export async function GET(req) {
 
     const isElite = user.isElite || false;
     const isPremium = user.isPremium || false;
-    const isMember = user.isMember || false;
-
+    const CrScore = user.creditScore;
     let hasCredits = false;
     if (isElite) {
       hasCredits = true;
     } else if (isPremium) {
-      hasCredits = user.creditScore <= 20;
+      if (user.creditScore >= 20)
+        hasCredits = false;
+      else
+        hasCredits = true;
     } else {
-      hasCredits = user.creditScore <= 5;
+      if (user.creditScore >= 5)
+        hasCredits = false;
+      else
+        hasCredits = true;
     }
 
     return new Response(
-      JSON.stringify({ success: true, hasCredits, isMember, isPremium, isElite }),
+      JSON.stringify({ success: true, hasCredits, isPremium, isElite , CrScore }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error checking credits:", error.message);
+    console.log("Error checking credits:", error.message);
     return new Response(JSON.stringify({ success: false, message: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

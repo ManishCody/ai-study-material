@@ -3,9 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 const CourseIntro = ({ course }) => {
-  const [progress, setProgress] = useState(course.Complete || 0);
-  console.log(course);
-  
+  const [progress, setProgress] = useState(course.Complete || 0);  
 
   return (
     <motion.div

@@ -21,7 +21,7 @@ const CourseLayout = () => {
       setCourseLayout(response?.data?.course?.courseLayout);
       setLoading(false);
     } catch (error) {
-      console.error("Error fetching course layout:", error);
+      console.log("Error fetching course layout:", error);
       setLoading(false);
     }
   };
@@ -74,7 +74,7 @@ const CourseLayout = () => {
         chapter_id: currentChapter._id,
         isNotes: true,
       });
-      console.log(response);
+      
 
       if (response.status === 200) {
         setProgressData((prev) => ({
@@ -85,13 +85,11 @@ const CourseLayout = () => {
         fetchCourseLayout();
       }
     } catch (error) {
-      console.error("Error updating progress:", error);
+      console.log("Error updating progress:", error);
     } finally {
       setCompleting(false);
     }
   };
-
-  console.log(currentChapter);
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8">

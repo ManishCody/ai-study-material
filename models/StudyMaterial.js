@@ -46,6 +46,7 @@ const StudyMaterialSchema = new mongoose.Schema({
     data: { type: Array, default: [] },
     isComplete: { type: Boolean, default: false }
   },
+  courseLabel : { type: String , default:'ALL' },
 }, { timestamps: true });
 
 module.exports =

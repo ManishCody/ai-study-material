@@ -73,7 +73,7 @@ export async function PATCH(req) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Error updating progress:', error);
+    console.log('Error updating progress:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

@@ -7,6 +7,7 @@ const UserSchema = new mongoose.Schema({
   isPremium: { type: Boolean, default: false }, 
   isElite: { type: Boolean, default: false },
   paymentHistory: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Payment' }],
+  courseLabels: { type: [String], default: [], set: (v) => [...new Set(v)] }
 }, { timestamps: true });
 
 module.exports = mongoose.models.User || mongoose.model('User', UserSchema);

@@ -15,7 +15,6 @@ const CourseCard = ({ courses }) => {
   };
 
   storeCourseInfo(courses?._id, 0);
-  console.log(courses);
   
   return (
     <div className="bg-white shadow-lg rounded-xl overflow-hidden transform transition-transform hover:scale-105 duration-300 hover:shadow-2xl">

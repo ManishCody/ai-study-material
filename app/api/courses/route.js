@@ -20,7 +20,7 @@ export async function POST(req) {
 
     return NextResponse.json({ result });
   } catch (error) {
-    console.error("Error fetching study materials:", error);
+    console.log("Error fetching study materials:", error);
     return NextResponse.json(
       { error: error.message || "An unexpected error occurred." },
       { status: 500 }
@@ -44,7 +44,7 @@ export async function GET(req) {
 
     return NextResponse.json({ course });
   } catch (error) {
-    console.error("Error fetching study materials:", error);
+    console.log("Error fetching study materials:", error);
     return NextResponse.json(
       { error: error.message || "An unexpected error occurred." },
       { status: 500 }
