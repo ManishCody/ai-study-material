@@ -2,7 +2,6 @@
 import React, {  useState } from 'react'
 import Sidebar from './_component/Sidebar'
 import DashboardHeader from './_component/DashboardHeader'
-import ChatBot from './_component/ChatBot'
 
 
 const layout = ({ children }) => {
@@ -12,8 +11,6 @@ const layout = ({ children }) => {
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen)
   }
-
-  
 
   return (
     <div>
@@ -27,11 +24,9 @@ const layout = ({ children }) => {
         >
           <Sidebar />
         </div>
-        {/* Content */}
         <div className={`flex-grow md:ml-64`}>
           <div className="p-10">
             {children}
-            <ChatBot />
           </div>
         </div>
       </div>
