@@ -51,13 +51,7 @@ const UserProvider = ({ children }) => {
 
   return (
     <UserContext.Provider value={{ userInfo, setUserInfo }}>
-      {loading ? (
-        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-md flex items-center justify-center z-50">
-          <Loader2 className="w-16 h-16 animate-spin text-primary" />
-        </div>
-      ) : (
-        children
-      )}
+        {children}
     </UserContext.Provider>
   );
 };
