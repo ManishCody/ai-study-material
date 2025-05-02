@@ -19,7 +19,6 @@ const Sidebar = () => {
   const MenueList = [
     { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
     { name: "Upgrade", icon: Shield, path: "/dashboard/upgrade" },
-    { name: "Dino", icon: Gamepad, path: "/dashboard/dino" },
   ];
 
   useEffect(() => {
