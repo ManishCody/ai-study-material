@@ -7,14 +7,19 @@ import { createadv, verifyPayment } from "../utils/api";
 
 const AdvertisementForm = () => {
   const [userId, setUserId] = useState("");
-  const email = localStorage.getItem("userEmail");
+  const [email, setEmail] = useState("");
+
   useEffect(() => {
     if (typeof window !== "undefined") {
+      const storedEmail = localStorage.getItem("userEmail");
       const user = localStorage.getItem("CLERK_USER_ID");
+  
+      setEmail(storedEmail);
       setUserId(user);
       setFormData((prev) => ({ ...prev, addedBy: user }));
     }
   }, []);
+  
 
   const [formData, setFormData] = useState({
     image: "",
