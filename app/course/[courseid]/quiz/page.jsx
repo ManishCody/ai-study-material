@@ -120,7 +120,7 @@ const QuizPage = () => {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 1 }}
             >
-                CSS Quiz
+                Quiz
             </motion.h1>
 
             {quiz.length > 0 && !showResult ? (

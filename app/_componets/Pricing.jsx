@@ -44,7 +44,7 @@ const steps = [
 
 export function AboutAndGuide() {
   return (
-    <section id="about-guide" className="relative m-3 overflow-hidden bg-background py-24 sm:py-32">
+    <section id="about" className="relative m-3 overflow-hidden bg-background py-24 sm:py-32">
       {/* Background decoration */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute left-[-20%] top-[-10%] h-[500px] w-[500px] rounded-full bg-primary/5 blur-3xl" />
@@ -79,7 +79,7 @@ export function AboutAndGuide() {
         </div>
 
         {/* How It Works */}
-        <div className="relative">
+        <div className="relative" id="get-started">
           <div className="mx-auto max-w-2xl text-center mb-12">
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl mb-4">
               How Study Beam Works
@@ -109,7 +109,7 @@ export function AboutAndGuide() {
         </div>
 
         {/* Benefits */}
-        <div  className="mt-24 rounded-2xl border bg-background/50 backdrop-blur-sm p-8">
+        <div id="why" className="mt-24 rounded-2xl border bg-background/50 backdrop-blur-sm p-8">
           <div className="flex items-center gap-2 mb-8">
             <Sparkles className="h-6 w-6 text-primary" />
             <h3 className="text-2xl font-semibold">Why Students Love Study Beam</h3>

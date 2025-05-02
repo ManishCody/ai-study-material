@@ -148,7 +148,7 @@ const Course = () => {
             <MemoryGame />
             <button
               onClick={() => setShowMemoryGame(false)}
-              className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded"
+              className="absolute top-2 right-0 bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded"
             >
               ✖
             </button>

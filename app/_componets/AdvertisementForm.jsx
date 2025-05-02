@@ -1,12 +1,21 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer } from "react-toastify";
-
+import { createadv, verifyPayment } from "../utils/api";
 
 const AdvertisementForm = () => {
+  const [userId, setUserId] = useState("");
+  const email = localStorage.getItem("userEmail");
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const user = localStorage.getItem("CLERK_USER_ID");
+      setUserId(user);
+      setFormData((prev) => ({ ...prev, addedBy: user }));
+    }
+  }, []);
+
   const [formData, setFormData] = useState({
     image: "",
     text: "",
@@ -14,7 +23,7 @@ const AdvertisementForm = () => {
     displayUntil: "",
     targetCourse: "",
     advLabel: [],
-    addedBy:localStorage.getItem("CLERK_USER_ID")
+    addedBy: "",
   });
   const [formError, setFormError] = useState({
     displayUntil: "",
@@ -114,19 +123,101 @@ const AdvertisementForm = () => {
     }
   };
 
+  const loadRazorpay = async (plan) => {
+    console.log("plan:", plan);
+  
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+  
+    script.onload = async () => {
+      try {
+        const { advLabel, displayUntil, total } = plan;
+        const { data } = await createadv(advLabel, displayUntil, total);
+  
+        if (!data || !data.order) {
+          toast.error("Order creation failed");
+          return;
+        }
+        console.log("Order Created:", data);
+  
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_Id,
+          amount: data.order.amount,
+          currency: "INR",
+          name: "Adv creation",
+          description: plan.description,
+          order_id: data.order.id,
+          handler: async function (response) {
+            try {
+              const res = await verifyPayment(
+                response.razorpay_order_id,
+                response.razorpay_payment_id,
+                response.razorpay_signature,
+                email,
+                plan.courseId,
+                true,
+                advLabel,
+                displayUntil,
+                formData.image,
+                formData.text,
+                total
+              );
+              console.log(res);
+              
+              if (res.data.success) {
+                toast.success("Payment Verified Successfully ");
+              } else {
+                toast.error("Payment Verification Failed ");
+              }
+            } catch (error) {
+              console.log("Payment Verification Error", error);
+              toast.error("Payment Verification Error ");
+            }
+          },
+          theme: {
+            color: "#3399cc",
+          },
+        };
+  
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      } catch (error) {
+        console.log("Payment Error:", error);
+        toast.error("Something went wrong ");
+      }
+    };
+  
+    script.onerror = () => {
+      toast.error("Failed to load Razorpay SDK");
+    };
+  
+    document.body.appendChild(script);
+  };
+  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const formattedData = {
         ...formData,
-        advLabel: formData.advLabel.map(label => label.toUpperCase()) 
+        advLabel: formData.advLabel.map(label => label.toUpperCase())
       };
-      await axios.post("/api/create-adv", formattedData);
-      toast.success("Advertisement created successfully!");
-    } catch (error) {
-      console.log("Error:", error);
-      toast.error("Failed to create advertisement. Please try again.");
-    }finally{
+      // await axios.post("/api/create-adv", formattedData);
+      // toast.success("Advertisement created successfully!");
+      const advLabel = formData.advLabel.map(label => label.toUpperCase())
+      const displayUntil = formData.displayUntil;
+      const total = bill.total;
+      const plan = {
+        advLabel,
+        displayUntil,
+        total,
+        email: "testuser@gmail.com",
+        description: "Advertisement Promotion",
+      };
+
+      const resp = await loadRazorpay(plan);
+      
       setFormData({
         image: "",
         text: "",
@@ -134,8 +225,12 @@ const AdvertisementForm = () => {
         displayUntil: "",
         targetCourse: "",
         advLabel: [],
-        addedBy:localStorage.getItem("CLERK_USER_ID")
+        addedBy: "",
       })
+
+    } catch (error) {
+      console.log("Error:", error);
+      toast.error("Failed to create advertisement. Please try again.");
     }
   };
 
@@ -222,19 +317,16 @@ const AdvertisementForm = () => {
                   type="button"
                   onClick={() => handleLabelChange(label)}
                   disabled={isDisabled || (isLimitReached && label !== "All")}
-                  className={`px-4 py-2 border rounded-full transition-all ${
-                    isSelected
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-100 text-gray-800"
-                  } ${
-                    isDisabled || (isLimitReached && label !== "All")
+                  className={`px-4 py-2 border rounded-full transition-all ${isSelected
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-100 text-gray-800"
+                    } ${isDisabled || (isLimitReached && label !== "All")
                       ? "opacity-50 cursor-not-allowed"
-                      : `${
-                          isSelected
-                            ? "hover:bg-blue-100 hover:text-black"
-                            : "hover:bg-blue-100"
-                        }`
-                  }`}
+                      : `${isSelected
+                        ? "hover:bg-blue-100 hover:text-black"
+                        : "hover:bg-blue-100"
+                      }`
+                    }`}
                 >
                   {label}
                 </motion.button>
