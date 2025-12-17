@@ -44,14 +44,14 @@ const steps = [
 
 export function AboutAndGuide() {
   return (
-    <section id="about" className="relative m-3 overflow-hidden bg-background py-24 sm:py-32">
+    <section id="about" className="relative overflow-hidden bg-background py-24 sm:py-32">
       {/* Background decoration */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute left-[-20%] top-[-10%] h-[500px] w-[500px] rounded-full bg-primary/5 blur-3xl" />
         <div className="absolute right-[-20%] bottom-[-10%] h-[500px] w-[500px] rounded-full bg-primary/5 blur-3xl" />
       </div>
 
-      <div id="learn-more" className="container relative">
+      <div id="learn-more" className="mx-auto max-w-7xl px-6">
         {/* Header */}
         <div className="mx-auto max-w-2xl text-center mb-16">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl mb-4">
@@ -63,13 +63,13 @@ export function AboutAndGuide() {
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-24 justify-items-center">
           {features.map((feature, index) => (
             <div
               key={index}
-              className="group relative overflow-hidden rounded-lg border bg-background p-6 hover:shadow-lg transition-all duration-200"
+              className="group relative overflow-hidden rounded-lg border bg-background p-6 hover:shadow-lg transition-all duration-200 text-center"
             >
-              <div className="mb-4">
+              <div className="mb-4 flex justify-center">
                 <feature.icon className="h-8 w-8 text-primary" />
               </div>
               <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
@@ -89,16 +89,16 @@ export function AboutAndGuide() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 justify-items-center">
             {steps.map((step, index) => (
               <div
                 key={index}
                 className={cn(
-                  "relative p-6 rounded-lg border bg-background",
-                 
+                  "relative p-6 rounded-lg border bg-background text-center",
+                  
                 )}
               >
-                <div className="mb-4 flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary font-bold">
+                <div className="mb-4 flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary font-bold mx-auto">
                   {step.number}
                 </div>
                 <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
