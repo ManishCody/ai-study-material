@@ -143,7 +143,7 @@ pre {
 
 code {
   font-size: 1rem;
-  white-space: pre-wrap; /* Allows wrapping within the container */
+  white-space: pre-wrap; /* Allows wrapping within the  */
   word-wrap: break-word; /* Prevents long strings from overflowing */
 }
 

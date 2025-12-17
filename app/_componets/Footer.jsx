@@ -32,7 +32,7 @@ const socialLinks = [
 export function Footer() {
   return (
     <footer className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container px-4 md:px-6">
+      <div className="px-4 md:px-6">
         {/* Main Footer Content */}
         <div className="grid grid-cols-1 gap-8 py-12 md:grid-cols-2 lg:grid-cols-5 lg:gap-12">
           {/* Brand Section */}

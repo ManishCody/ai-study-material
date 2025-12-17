@@ -8,7 +8,7 @@ export function Hero() {
   const { user } = useUser();
 
   return (
-    <section className="container flex flex-col items-center justify-center gap-4 py-24 md:py-32 text-center">
+    <section className="flex flex-col items-center justify-center gap-4 py-24 md:py-32 text-center">
       <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl">
         Transform Your Learning with{" "}
         <span className="text-primary">AI-Powered Study Materials</span>

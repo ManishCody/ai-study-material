@@ -20,10 +20,12 @@ export default function Home() {
   }, [user]);
 
   return (
-    <div>
+    <div className="min-h-screen flex flex-col">
       <DashboardHeader />
-      <Hero />
-      <AboutAndGuide />
+      <main className="flex-1">
+        <Hero />
+        <AboutAndGuide />
+      </main>
       <Footer />
       {!userInfo?.isElite && !userInfo?.isPremium && <AdContainer />}
     </div>
